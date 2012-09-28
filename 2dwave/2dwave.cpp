@@ -31,12 +31,7 @@ void **matrix(int row, int col, int num_bytes)
   return  (void **)pointer;
 
   } // end: function void **matrix()
-const double pi = 3.1415;
-double initcond(double x,double y)
-{
-	//return sin(pi*x)*sin(2*pi*y);
-	return exp(-(x*x+y*y));
-}
+
 void print_matrix(int n,double** A, const char * file)
 {
 	ofstream ofs(file);
@@ -51,8 +46,85 @@ void print_matrix(int n,double** A, const char * file)
 std::string ZeroPadNumber(int num)
 {
     std::ostringstream ss;
-    ss << std::setw( 7 ) << std::setfill( '0' ) << num;
+    ss << std::setw(7) << std::setfill( '0' ) << num;
     return ss.str();
+}
+class wavesolver {
+public:
+	wavesolver(double(*_c)(double x, double y), double (*_initc)(double x,double y),double** _u, double _dt = 0.0001, double _h = 0.001, double _T=1, double _Lx = 1, double _Ly = 1)
+	{
+		initc = _initc;
+		c = _c; 
+		Lx = _Lx; Ly = _Ly; dt = _dt; h = _h; T=_T;
+		Nx = (int) ceil(Lx/h);
+		Nt = (int) ceil(T/dt);
+		u = _u;
+		current_time_step = 0;
+	}
+
+	int nextstep() {
+		if (current_time_step==0) {
+			init();
+			return 1;
+		}
+		for (int i=1; i<Nx-1; i++) {
+			for (int j=1; j<Nx-1; j++) {
+				unext[i][j] = 2*u[i][j] - ulast[i][j] + (dt*dt)/(h*h)*(u[i+1][j] - 4*u[i][j] + u[i-1][j] + u[i][j+1] + u[i][j-1]);
+			}
+		}
+		for (int i=1; i<Nx-1; i++) {
+			for (int j=1; j<Nx-1; j++) { 
+				ulast[i][j] = u[i][j];
+				u[i][j] = unext[i][j];
+			}
+		}
+		return ++current_time_step;
+	}
+	double getTstep() {
+		return Nt;
+	}
+private:
+	double T, Lx, Ly, dt,h;
+	int Nx,Ny,Nt;
+	double **u;
+	double **unext;
+	double **ulast;
+	int current_time_step;
+	double(*c)(double x, double y);
+	double(*initc)(double x, double y);
+	void init() {
+		if (current_time_step!=0)
+			return;
+		unext = (double**)matrix(Nx,Nx,sizeof(double));
+		ulast = (double**)matrix(Nx,Nx,sizeof(double));
+		for (int i=0; i<Nx; i++) {
+			for (int j=0; j<Nx; j++) {
+				u[i][j] = 0;
+				unext[i][j] = 0;
+				ulast[i][j] = (*initc)(h*i,h*j);
+			}
+		}
+		// first timestep n = 0->1
+		double temp;
+		for (int i=1; i<Nx-1; i++) {
+			for (int j=1; j<Nx-1; j++) {
+				temp = ulast[i][j] + (dt)/(2*h*h)*(ulast[i+1][j] - 4*ulast[i][j] + ulast[i-1][j] + ulast[i][j+1] + ulast[i][j-1]);
+				u[i][j] = 2*ulast[i][j] - temp + (dt*dt)/(h*h)*(ulast[i+1][j] - 4*ulast[i][j] + ulast[i-1][j] + ulast[i][j+1] + ulast[i][j-1]);
+			}
+		}
+		current_time_step=1;
+
+	}
+};
+const double pi = 3.1415;
+double initcond(double x,double y)
+{
+	//return sin(pi*x)*sin(2*pi*y);
+	return exp(-(x*x+y*y));
+}
+double c(double x, double y)
+{
+	return 1;
 }
 int main()
 {
@@ -62,9 +134,16 @@ int main()
 	double h = 0.001;
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
+	double **u = (double**)matrix(Nx,Nx,sizeof(double));
+	wavesolver wave1(&c,&initcond,u,0.001, 0.01);
+	for (int n=0; n<wave1.getTstep()/10;n++) {
+		wave1.nextstep();
+	}	
+	print_matrix(Nx,u,"test123.d");
+	/*	
 	stringstream str;
 	double **unext = (double**)matrix(Nx,Nx,sizeof(double));
-	double **u = (double**)matrix(Nx,Nx,sizeof(double));
+
 	double **ulast = (double**)matrix(Nx,Nx,sizeof(double));
 
 	for (int i=0; i<Nx; i++) {
@@ -100,6 +179,6 @@ int main()
 		print_matrix(Nx,u,str.str().c_str());
 		}
 	} // time
-
+	*/
 	return 0;
 }
