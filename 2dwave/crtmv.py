@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from numpy import *
-Nx = 1000
+Nx = 100
 i = 0; j = 0;
 u = array([i/1000.0 for i in xrange(Nx*Nx)])
 u.shape = Nx,Nx

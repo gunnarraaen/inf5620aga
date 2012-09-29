@@ -120,7 +120,7 @@ const double pi = 3.1415;
 double initcond(double x,double y)
 {
 	//return sin(pi*x)*sin(2*pi*y);
-	return exp(-(x*x+y*y));
+	return exp( -((x-0.5)*(x-0.5)/2 + (y-0.5)*(y-0.5))/2 );
 }
 double c(double x, double y)
 {
@@ -128,20 +128,26 @@ double c(double x, double y)
 }
 int main()
 {
+	stringstream str;
+	int write_delay = 10;
 	double T = 1;
 	double Lx = 1;
-	double dt = 0.0001;
-	double h = 0.001;
+	double dt = 0.001;
+	double h = 0.01;
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
 	double **u = (double**)matrix(Nx,Nx,sizeof(double));
-	wavesolver wave1(&c,&initcond,u,0.001, 0.01);
-	for (int n=0; n<wave1.getTstep()/10;n++) {
+	wavesolver wave1(&c,&initcond,u, dt, h, T, Lx);
+	for (int n=0; n<wave1.getTstep(); n++) {
 		wave1.nextstep();
+		if (n % write_delay == 0) {
+			str.str(std::string(""));
+			str << "test.d" << ZeroPadNumber(n/write_delay);
+			print_matrix(Nx,u,str.str().c_str());
+		}
 	}	
-	print_matrix(Nx,u,"test123.d");
 	/*	
-	stringstream str;
+
 	double **unext = (double**)matrix(Nx,Nx,sizeof(double));
 
 	double **ulast = (double**)matrix(Nx,Nx,sizeof(double));
