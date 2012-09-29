@@ -1,0 +1,122 @@
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt   # For plotting graphs.
+import numpy as np
+import subprocess                 # For issuing commands to the OS.
+import os
+import sys                        # For determining the Python version.
+
+t0 = 0.0
+T = 1.2
+c = 3.5
+dt = 0.01
+dx = 0.05
+Nt = int((T-t0)/dt)
+x0 = 0.0
+x1 = 1.0
+
+Nx = int((x1-x0)/dx)
+t = np.linspace(t0,T,Nt)
+x_init = np.zeros(Nx)
+x = np.zeros(Nx)
+xp = np.zeros(Nx)
+xpp = np.zeros(Nx)
+dxdt = np.zeros(Nx)
+dxdtp = np.zeros(Nx)
+
+factor = c*c*dt*dt/(dx*dx)
+
+#initial positions
+xpp = np.linspace(x0,x1,Nx)
+xp = (xpp-x0)*(xpp-x1)
+
+xplot = np.linspace(x0,x1,Nx)
+
+plt.plot(xpp,xp)
+
+
+#first step
+for i in range(1,Nx-1):
+	x[i] = xp[i] + (factor/2.)*(xp[i+1] - 2*xp[i] + x[i+1])
+xpp = xp
+xp = x
+
+
+for n in range(Nt):
+    for i in range(1,Nx-1):
+        x[i] = 2*xp[i] - xpp[i] + factor*(xp[i-1] - 2*xp[i] + xp[i+1])
+    x[0] = 0.0
+    x[-1] = 0.0
+    xpp = xp
+    xp = x
+    plt.plot(xplot,x)
+    plt.axis((x0,x1, abs(x0-x1),-abs(x0-x1)))
+    #
+    # The next four lines are just like MATLAB.
+    #
+    plt.plot(xplot,x,'b.')
+    plt.axis((x0,x1,-abs(x0-x1), abs(x0-x1)))
+    plt.xlabel('x-position')
+    plt.ylabel('y-position')
+
+    #
+    # Notice the use of LaTeX-like markup.
+    #
+    plt.title(r'$t=balle$', fontsize=20)
+
+    #
+    # The file name indicates how the image will be saved and the
+    # order it will appear in the movie.  If you actually wanted each
+    # graph to be displayed on the screen, you would include commands
+    # such as show() and draw() here.  See the matplotlib
+    # documentation for details.  In this case, we are saving the
+    # images directly to a file without displaying them.
+    #
+    filename = str('%03d' % n) + '.png'
+    plt.savefig(filename, dpi=100)
+
+    #
+    # Let the user know what's happening.
+    #
+    print 'Wrote file', filename
+
+    #
+    # Clear the figure to make way for the next image.
+    #
+    plt.clf()
+
+#
+# Now that we have graphed images of the dataset, we will stitch them
+# together using Mencoder to create a movie.  Each image will become
+# a single frame in the movie.
+#
+# We want to use Python to make what would normally be a command line
+# call to Mencoder.  Specifically, the command line call we want to
+# emulate is (without the initial '#'):
+# mencoder mf://*.png -mf type=png:w=800:h=600:fps=25 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o output.avi
+# See the MPlayer and Mencoder documentation for details.
+#
+
+command = ('mencoder',
+           'mf://*.png',
+           '-mf',
+           'type=png:w=800:h=600:fps=25',
+           '-ovc',
+           'lavc',
+           '-lavcopts',
+           'vcodec=mpeg4',
+           '-oac',
+           'copy',
+           '-o',
+           'output.avi')
+
+#os.spawnvp(os.P_WAIT, 'mencoder', command)
+
+print "\n\nabout to execute:\n%s\n\n" % ' '.join(command)
+subprocess.check_call(command)
+
+print "\n\n The movie was written to 'output.avi'"
+
+print "\n\n You may want to delete *.png now.\n\n"
+
+
