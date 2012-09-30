@@ -11,7 +11,7 @@ public:
 	{
 		initc = _initc;
 		c = _c; 
-		Lx = _Lx; Ly = _Ly; dt = _dt; h = _h; T=_T;
+		Lx = _Lx; Ly = _Ly; dt = _dt; h = _h; T = _T;
 		Nx = (int) ceil(Lx/h);
 		Nt = (int) ceil(T/dt);
 		u = _u;
@@ -32,23 +32,23 @@ public:
 	}
 	void wave(double **un, double **uc, double **ul, double a, double b, double c) 
 	{
-		for (int i=1; i<Nx-1; i++) {
+		for (int i = 1; i < (Nx-1); i++) {
 			for (int j=1; j<Nx-1; j++) {
-				un[i][j] = 2*a*uc[i][j] - b*ul[i][j] + c*deltaDiff(i,j,uc);
+				un[i][j] = 2*a*uc[i][j] - b*ul[i][j] + c*deltaDiffB(i+1,i,i-1,j+1,j,j-1,uc);
 			}
 		}
 		// boundary
-		for (int j=2; j<Nx-1; j++) {
-			un[0][j] = 2*a*uc[0][j] - b*ul[0][j] +c*deltaDiffB(0,j,uc);
-			un[Nx-1][j] = 2*a*uc[Nx-1][j] - b*ul[Nx-1][j] +c*deltaDiffB(Nx-1,j,uc);
-			un[j][0] = 2*a*uc[j][0] - b*ul[j][0] +c*deltaDiffB(j,0,uc);
-			un[j][Nx-1] = 2*a*uc[j][Nx-1] - b*ul[j][Nx-1] +c*deltaDiffB(j,Nx-1,uc);
+		for (int j = 2; j < (Nx-1); j++) {
+			un[0][j] =    2*a*uc[0][j]    - b*ul[0][j]     + c*deltaDiffB(1,0,1		,j+1,j,j-1	,uc);
+			un[Nx-1][j] = 2*a*uc[Nx-1][j] - b*ul[Nx-1][j]  + c*deltaDiffB(Nx-2,Nx-1,Nx-2	,j+1,j,j-1	,uc);
+			un[j][0] =    2*a*uc[j][0]    - b*ul[j][0]     + c*deltaDiffB(j+1,j,j-1		,1,0,1		,uc);
+			un[j][Nx-1] = 2*a*uc[j][Nx-1] - b*ul[j][Nx-1]  + c*deltaDiffB(j+1,j,j-1		,Nx-2,Nx-1,Nx-2	,uc);
 		}
 		// corner
-		un[0][0] = 2*a*uc[0][0] - b*ul[0][0] +c*deltaDiffB(0,0,uc);
-		un[0][Nx-1] = 2*a*uc[0][Nx-1] - b*ul[0][Nx-1] +c*deltaDiffB(0,Nx-1,uc);
-		un[Nx-1][0] = 2*a*uc[Nx-1][0] - b*ul[Nx-1][0] +c*deltaDiffB(Nx-1,0,uc);
-		un[Nx-1][Nx-1] = 2*a*uc[Nx-1][Nx-1] - b*ul[Nx-1][Nx-1] +c*deltaDiffB(Nx-1,Nx-1,uc);
+		un[0][0] =       2*a*uc[0][0]       - b*ul[0][0]       + c*deltaDiffB(1,0,1		,1,0,1		,uc);
+		un[0][Nx-1] =    2*a*uc[0][Nx-1]    - b*ul[0][Nx-1]    + c*deltaDiffB(1,0,1		,Nx-2,Nx-1,Nx-2	,uc);
+		un[Nx-1][0] =    2*a*uc[Nx-1][0]    - b*ul[Nx-1][0]    + c*deltaDiffB(Nx-2,Nx-1,Nx-2	,1,0,1		,uc);
+		un[Nx-1][Nx-1] = 2*a*uc[Nx-1][Nx-1] - b*ul[Nx-1][Nx-1] + c*deltaDiffB(Nx-2,Nx-1,Nx-2	,Nx-2,Nx-1,Nx-2	,uc);
 		
 	}
 	double getTsteps() {return Nt;}
@@ -62,30 +62,31 @@ private:
 	int current_time_step;
 	double(*c)(double x, double y);
 	double(*initc)(double x, double y);
-	double deltaDiff(int i, int j, double ** uc) 
+/*	double deltaDiff(int i, int j, double ** uc) 
 	{
 		return (dt*dt)/(h*h)*(uc[i+1][j] - 4*uc[i][j] + uc[i-1][j] + uc[i][j+1] + uc[i][j-1]);
-	}
-	double deltaDiffB(int i, int j, double **uc) 
+	}*/
+	double deltaDiffB(int i1, int i, int i_1, int j1, int j, int j_1, double **uc) 
 	{
-		double ui1,ui_1,uj1,uj_1;
+	/*	double ui1,ui_1,uj1,uj_1;
 		if (i==0) {
-			ui1=uc[1][j]; ui_1 = uc[1][j];
-			uj1=uc[i][j+1]; uj_1=uc[i][j-1];
+			ui1=uc[1][j];    ui_1 = uc[1][j];
+			uj1=uc[i][j+1];  uj_1=uc[i][j-1];
 		} else if(i==Nx-1)
 		{
 			ui1=uc[Nx-2][j]; ui_1 = uc[Nx-2][j];
-			uj1=uc[i][j+1]; uj_1=uc[i][j-1];
+			uj1=uc[i][j+1];  uj_1=uc[i][j-1];
 		} else if(j==0)
 		{
-			ui1=uc[i+1][j]; ui_1 = uc[i-1][j];
-			uj1=uc[i][1]; uj_1=uc[i][1];
+			ui1=uc[i+1][j];  ui_1 = uc[i-1][j];
+			uj1=uc[i][1];    uj_1=uc[i][1];
 		} else if(j==Nx-1)
 		{
-			ui1=uc[i+1][j]; ui_1 = uc[i-1][j];
+			ui1=uc[i+1][j];  ui_1 = uc[i-1][j];
 			uj1=uc[i][Nx-2]; uj_1=uc[i][Nx-2];
 		} else {cout << "error!";}
-		return (dt*dt)/(h*h)*(ui1 - 4*uc[i][j] + ui_1 + uj1 + uj_1);
+	*/
+		return (dt*dt)/(h*h)*(uc[i1][j] - 4*uc[i][j] + uc[i_1][j] + uc[i][j1] + uc[i][j_1]);
 	}
 	void init() 
 	{
@@ -95,15 +96,16 @@ private:
 			for (int j=0; j<Nx; j++) {
 				ulast[i][j] = 0;
 				unext[i][j] = 0;
-				u[i][j] = 0; 
-			}
-		}
-		for (int i=1; i<Nx-1; i++) {
-			for (int j=1; j<Nx-1; j++) {
+				//u[i][j] = 0; 
 				u[i][j] = (*initc)(h*i,h*j); 
 			}
 		}
-		wave(ulast,u,ulast,0.5,0,1);
+/*		for (int i=1; i<Nx-1; i++) {
+			for (int j=1; j<Nx-1; j++) {
+				u[i][j] = (*initc)(h*i,h*j); 
+			}
+		}*/
+		wave(ulast,u,ulast,0.5,0,0.5);
 		
 
 	}
@@ -112,7 +114,7 @@ const double pi = 3.1415;
 double initcond_exp(double x,double y)
 {
 	//return sin(pi*x)*sin(2*pi*y);
-	return 3*exp( -((x-0.5)*(x-0.5) + (y-0.5)*(y-0.5))*10 );
+	return 3*exp( -((x-0.5)*(x-0.5) + (y-0.5)*(y-0.5))*100 );
 }
 double initcond_sin(double x, double y)
 {
@@ -130,7 +132,7 @@ int main()
 {
 	stringstream str;
 	int write_delay = 10;
-	double T = 1;
+	double T = 3;
 	double Lx = 1;
 	double dt = 0.001;
 	double h = 0.01;
