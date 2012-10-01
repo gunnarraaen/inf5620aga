@@ -89,7 +89,7 @@ private:
 const double pi = 3.1415;
 double initcond_exp(double x,double y)
 {
-	return 2*exp( -((x-1)*(x-1) + (y-1)*(y-1))*110 );
+	return 3*exp( -((x-1)*(x-1) + (y-1)*(y-1))*110 );
 }
 double initcond_sin(double x, double y)
 {
@@ -101,12 +101,10 @@ double initcond_sin_exact(double x, double y, double t, double c)
 }
 double coeff(double x, double y)
 {
-	if (x>2.0 && x < 3.0 && y>2.0 && y<3.0) {
-//		cout << "coeff = 0.1" << endl;
-		return 0.1; 
+	if (x>2.0 && x < 2.1 && (y<2.0 || y>2.2)) {
+		return 0.0; 
 	}
 	else {
-	//	cout << "coEFF = 1" << endl;
 		return 1;
 	}
 }

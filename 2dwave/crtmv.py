@@ -37,9 +37,9 @@ for i in range(frames):
 	u = loadtxt('test.d%07d'%i);
 	fname = '_tmp%07d.png' % i
 #	surf(X,Y,u,axis=[0,1,0,1,-3,3], savefig=fname);
-	ax.plot_surface(X,Y,u, rstride=1, cstride=1, cmap=cm.jet, linewidth=0, antialiased=False);
-#	ax.plot_surface(X,Y,u);
-	ax.set_zlim3d(-3,3);
+	ax.plot_surface(X,Y,u, rstride=2, cstride=2, cmap=cm.jet, linewidth=0, antialiased=True);
+#	ax.plot_surface(X,Y,u,cmap=cm.jet,antialiased=True);
+	ax.set_zlim3d(-2,2);
 	ax.set_axis_on();
 	ax.set_title('t = %s' %(i*dt));
 	print 'Saving frame', fname
