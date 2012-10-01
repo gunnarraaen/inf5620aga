@@ -29,7 +29,11 @@ void **matrix(int row, int col, int num_bytes)
   return  (void **)pointer;
 
 }
-
+void **free_matrix(void **matr)
+{
+	delete[] (char*) matr[0];
+	delete[] matr;
+}
 void print_matrix(int n,double** matr, const char * file)
 {
 	ofstream ofs(file);
