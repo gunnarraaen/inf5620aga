@@ -108,9 +108,13 @@ double coeff(double x, double y)
 		return 1;
 	}
 }
+double coeff2(double x, double y)
+{
+	return 1 - exp( - ((x-2)*(x-2) + (y-2)*(y-2))*20 ) - exp( -((x-3)*(x-3) + (y-3)*(y-3))*20 );
+}
 int main(int argc, char** argv)
 {
-	double T = 6;
+	double T = 10;
 	if (argc==2) {
 		T = atof(argv[1]);
 		cout << endl << argc;
@@ -119,11 +123,11 @@ int main(int argc, char** argv)
 	int write_delay = 10;
 	double Lx = 4;
 	double dt = 0.003;
-	double h = 0.04;
+	double h = 0.02;
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
 	double **u = (double**)matrix(Nx,Nx,sizeof(double));
-	wavesolver wave1(&coeff,&initcond_exp,u, dt, h, T, Lx);
+	wavesolver wave1(&coeff2,&initcond_exp,u, dt, h, T, Lx);
 	for (int n=0; n<Nt; n++) {
 		wave1.nextstep();
 /*		for (int i=0; i<Nx; i++) {
