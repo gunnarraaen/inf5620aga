@@ -7,7 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from numpy import *
 movname = sys.argv[2]
 frames = int(sys.argv[1])
-Lx = 1;
+Lx = 4;
 Nx = 100
 i = 0; j = 0;
 u = array([i/1000.0 for i in xrange(Nx*Nx)])

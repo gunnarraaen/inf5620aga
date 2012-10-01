@@ -131,21 +131,21 @@ double coeff(double x, double y)
 int main()
 {
 	stringstream str;
-	int write_delay = 10;
-	double T = 3;
-	double Lx = 1;
+	int write_delay = 50;
+	double T = 5.5;
+	double Lx = 4;
 	double dt = 0.001;
-	double h = 0.01;
+	double h = 0.04;
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
 	double **u = (double**)matrix(Nx,Nx,sizeof(double));
-	wavesolver wave1(&coeff,&initcond_exp,u, dt, h, T, Lx);
+	wavesolver wave1(&coeff,&initcond_sin,u, dt, h, T, Lx);
 	for (int n=0; n<Nt; n++) {
-		wave1.nextstep();
-/*		for (int i=0; i<Nx; i++) {
+//		wave1.nextstep();
+		for (int i=0; i<Nx; i++) {
 		for (int j=0; j<Nx; j++) {
 			u[i][j] = initcond_sin_exact(i*h,j*h,n*dt,1);
-		}}*/
+		}}
 		if (n % write_delay == 0) {
 			str.str(std::string(""));
 			str << "test.d" << ZeroPadNumber(n/write_delay);
