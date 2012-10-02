@@ -1,6 +1,6 @@
 import os, sys
 import numpy as np
-from mayavi import mlab as ml
+from enthought.mayavi import mlab as ml
 #from mayavi import *
 #from mayavi.api import OffScreenEngine
 #e = OffScreenEngine()
