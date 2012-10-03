@@ -89,7 +89,8 @@ private:
 const double pi = 3.1415;
 double initcond_exp(double x,double y)
 {
-	return 3*exp( -((x-1)*(x-1) + (y-1)*(y-1))*110 );
+	return 4*exp( -((x-1.2)*(x-1.2) + (y-1.5)*(y-1.5))*90 ) + 4*exp( -((x-1.2)*(x-1.2) + (y-2.5)*(y-2.5))*90 );
+;
 }
 double initcond_sin(double x, double y)
 {
@@ -101,12 +102,14 @@ double initcond_sin_exact(double x, double y, double t, double c)
 }
 double coeff(double x, double y)
 {
-	if (x>2.0 && x < 2.1 && (y<2.0 || y>2.2)) {
-		return 0.0; 
+	if (x>1.6 && x<1.7) 
+	{
+		if ((y>1.5 && y<1.6) || (y>2.4 && y<2.5))
+			return 1;
+		else 
+			return 0;
 	}
-	else {
-		return 1;
-	}
+	return 1;
 }
 double coeff2(double x, double y)
 {
@@ -114,7 +117,7 @@ double coeff2(double x, double y)
 }
 int main(int argc, char** argv)
 {
-	double T = 10;
+	double T = 1;
 	if (argc==2) {
 		T = atof(argv[1]);
 		cout << endl << argc;
@@ -122,12 +125,12 @@ int main(int argc, char** argv)
 	stringstream str;
 	int write_delay = 10;
 	double Lx = 4;
-	double dt = 0.003;
+	double dt = 0.001;
 	double h = 0.02;
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
 	double **u = (double**)matrix(Nx,Nx,sizeof(double));
-	wavesolver wave1(&coeff2,&initcond_exp,u, dt, h, T, Lx);
+	wavesolver wave1(&coeff,&initcond_exp,u, dt, h, T, Lx);
 	for (int n=0; n<Nt; n++) {
 		wave1.nextstep();
 /*		for (int i=0; i<Nx; i++) {
