@@ -1,3 +1,4 @@
+#include "bitmap/EasyBMP.cpp"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -10,6 +11,7 @@ class wavesolver {
 public:
 	wavesolver(double(*_c)(double x, double y), double (*_initc)(double x,double y),double** _u, double _dt = 0.0001, double _h = 0.001, double _T=1, double _Lx = 1, double _Ly = 1)
 	{
+
 		initc = _initc;
 		c = _c; 
 		Lx = _Lx; Ly = _Ly; dt = _dt; h = _h; T = _T;
@@ -89,7 +91,8 @@ private:
 const double pi = 3.1415;
 double initcond_exp(double x,double y)
 {
-	return 4*exp( -((x-1.2)*(x-1.2) + (y-1.5)*(y-1.5))*90 ) + 4*exp( -((x-1.2)*(x-1.2) + (y-2.5)*(y-2.5))*90 );
+//	return 4*exp( -((x-1.2)*(x-1.2) + (y-1.5)*(y-1.5))*90 ) + 4*exp( -((x-1.2)*(x-1.2) + (y-2.5)*(y-2.5))*90 );
+	return 10*exp( -((x-2)*(x-2) + (y-2)*(y-2))*40 );
 ;
 }
 double initcond_sin(double x, double y)
@@ -115,8 +118,38 @@ double coeff2(double x, double y)
 {
 	return 1 - exp( - ((x-2)*(x-2) + (y-2)*(y-2))*20 ) - exp( -((x-3)*(x-3) + (y-3)*(y-3))*20 );
 }
+double coeff3(double x, double y)
+{
+	if (x<0 || y<0) return 0;
+	int Lx = 4;
+	static bool used_once = false;
+	static BMP input;
+	if (!used_once)
+	{
+		input.ReadFromFile("test4.bmp");
+		used_once = true;
+	}
+	int relevant_x = x*input.TellHeight()/Lx;
+	int relevant_y = y*input.TellWidth()/Lx;
+	double val = (int) input(relevant_y,relevant_x)->Red + (int) input(relevant_y,relevant_x)->Green + (int) input(relevant_y,relevant_x)->Blue;
+//	cout << "x:" << relevant_x << " y:" << relevant_y << endl;
+	val /=(3*256.0);
+	
+	//cout << relevant_x << ", " << relevant_y << ":" << val << "\n";
+	
+	return val;
+}
 int main(int argc, char** argv)
 {
+	
+/*	BMP input;
+	input.ReadFromFile("test3.bmp");
+	cout << "   (400,100)  (400,200)  (400,300)" << endl;
+	cout << "Blue: " << (int) input(400,150)->Blue << " " << (int) input(400,300)->Blue << " " << (int) input(400,420)->Blue << endl;
+	cout << "Red: "  << (int) input(400,150)->Red << " " << (int) input(400,250)->Red << " " << (int) input(400,420)->Red << endl;
+	cout << "Green: "<< (int) input(400,150)->Green << " " << (int) input(400,250)->Green << " " << (int) input(400,420)->Green << endl;
+	return 0;*/
+
 	double T = 1;
 	if (argc==2) {
 		T = atof(argv[1]);
@@ -130,7 +163,7 @@ int main(int argc, char** argv)
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
 	double **u = (double**)matrix(Nx,Nx,sizeof(double));
-	wavesolver wave1(&coeff,&initcond_exp,u, dt, h, T, Lx);
+	wavesolver wave1(&coeff3,&initcond_exp,u, dt, h, T, Lx);
 	for (int n=0; n<Nt; n++) {
 		wave1.nextstep();
 /*		for (int i=0; i<Nx; i++) {
