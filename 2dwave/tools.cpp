@@ -34,13 +34,17 @@ void **free_matrix(void **matr)
 	delete[] (char*) matr[0];
 	delete[] matr;
 }
-void print_matrix(int n,double** matr, const char * file)
+void print_matrix(int n,double** matr, const char * file, int skip)
 {
 	ofstream ofs(file);
 	for (int i=0;i<n;i++)
 	{
-		for (int j=0;j<n;j++)
-			ofs << matr[i][j] << " ";
+		if (i % skip==0) {
+		for (int j=0;j<n;j++) {
+			if (j %skip == 0)
+				ofs << matr[i][j] << " ";
+		}
+		}
 		ofs << endl;
 	}
 	ofs.close();
