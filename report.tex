@@ -1,0 +1,71 @@
+\documentclass{article}
+
+\usepackage[T1]{fontenc}
+%\usepackage[norwegian]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{url}
+
+\newcommand{\differential}[2]{\frac{\mathrm{d}#1}{\mathrm{d}#2}}
+\newcommand{\qqq}{\qquad\qquad\qquad}
+\newcommand{\f}[2]{\frac{#1}{#2}}
+\newcommand{\bs}[1]{$\boldsymbol #1$}
+\newcommand{\bsa}[1]{\boldsymbol #1}
+
+\lstset{keywordstyle=\color{Red},%\bfseries,
+    basicstyle=\small\ttfamily,
+    %identifierstyle=\color{NavyBlue},
+    commentstyle=\color{Red}\ttfamily,
+    stringstyle=\rmfamily,
+    %numbers=none,%left,%
+    %numberstyle=\scriptsize,%\tiny
+    %stepnumber=5,
+    numbersep=8pt,
+    %showstringspaces=false,
+    breaklines=true,
+    %frameround=ftff,
+    frame=single
+    frame=L
+}
+
+\begin{document}
+
+\author{Andreas Våvang Solbrå\\Gunnar Raaen\\Anders Hafreager}
+\title{INF5620 - a numerical analysis of the two dimensional wave equation}
+\maketitle
+\newpage
+
+\section*{Abstract}
+
+\section*{Theory}
+\begin{align}
+\frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
+\frac{\partial}{\partial x}\left( q (x,y)
+\frac{\partial u}{\partial x}\right) +
+\frac{\partial}{\partial y}\left( q (x,y)
+\frac{\partial u}{\partial y}\right) + f(x,y,t),
+\end{align}
+
+\section*{Numerical implementation}
+
+\section*{Verification}
+\subsection*{Constant solution}
+\subsection*{Exact 1D solution}
+\subsection*{Standing wave}
+\subsection*{Manufactured solution}
+\section*{Applications}
+\subsection*{Tsunami}
+In addition to what HPL says (ex 14), check out project 4 from FYS3150 in 2008:\\
+\url{http://bit.ly/3150tsunami}
+\subsection*{Electromagnetic wave}
+\subsection*{Double slit}
+
+\section*{Visualization}
+
+
+\end{document}

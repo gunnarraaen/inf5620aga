@@ -54,8 +54,9 @@ int main(int args, char* argv[]) {
 			_x = x(i);
 			_y = y(j);
 
-			um(i,j) = 0.5*exp(-(pow(_x,2)+pow(_y,2))*30);
-			u(i,j)  = 0.5*exp(-(pow(_x,2)+pow(_y,2))*30);
+			um(i,j) = sin(5*M_PI*exp(-(pow(_x,2)+pow(_y,2))*0.1))*exp(-(pow(_x,2)+pow(_y,2))*7);
+			u(i,j)  = sin(5*M_PI*exp(-(pow(_x,2)+pow(_y,2))*0.1))*exp(-(pow(_x,2)+pow(_y,2))*7);
+			
 		}
 	}
 
