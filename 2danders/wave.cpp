@@ -9,7 +9,7 @@ using namespace arma;
 
 int Nr;
 
-imat readBMP(char* filename)
+mat readBMP(char* filename)
 {
     int i;
     FILE* f = fopen(filename, "rb");
@@ -23,8 +23,6 @@ imat readBMP(char* filename)
     int height = *(int*)&info[22];
     int pixels = width*height;
     int bytesLeft = fileSize-54; // 54 bytes for the header, we need the rest
-    printf("Image is %d bytes\n",fileSize);
-    printf("Image contains %d pixels (%d,%d)\n",pixels,height,width);
 
     unsigned char* data = new unsigned char[bytesLeft];
     fread(data, sizeof(unsigned char), bytesLeft, f); // read the rest of the data at once
@@ -73,6 +71,7 @@ inline double calcC(double x, double y) {
 }
 
 int main(int args, char* argv[]) {
+	
 	Nr = args > 1 ? atoi(argv[1]) : 100;
 	double t_max = args > 2 ? atof(argv[2]) : 1.0;
 
