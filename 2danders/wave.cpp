@@ -8,6 +8,17 @@ using namespace std;
 using namespace arma;
 
 int Nr;
+vec x;
+vec y;
+mat H;
+mat world;
+mat u_p;
+mat u_;
+mat u_m;
+int k; // Used for fast calculation of bounds
+
+bool height_from_file;
+bool world_from_file;
 
 mat readBMP(char* filename)
 {
@@ -66,51 +77,98 @@ inline int idx(int i) {
 	return (i+10*Nr)%Nr;
 }
 
-inline double calcC(double x, double y) {
+inline double u(int i,int j) {
+	return u_(idx(i),idx(j));
+}
+
+inline double um(int i,int j, int di, int dj) {
+	int i_ = i+di;
+	int ij = j+dj;
+
+	k = (i_<0) + 2*(i_ >= Nr)+4*(j_ >= Nr) + 8*(j_ < 0); // Make the if OR test and save the result
+
+	if(k) {
+		// I don't always play with bit operators, but when I do
+		// I do it because it's hard to read
+
+		// if(!world(i_+(1&k) - ((2&k)>>1),j_+((4&k)>>2) - ((8&k)>>3))) {
+		if(!world(i,j)) {
+			// This is a solid wall
+			// return u_m(i-2*(1&k) + 2*((2&k)>>1),j-2*((4&k)>>2) + 2*((8&k)>>3));
+			return u_m(i-di,j-dj);
+		}
+	}
+
+	if(!world(i,j)) {
+		return u_m(i-di,j-dj);
+	} 
+
+	return u_m(idx(i),idx(j));
+}
+
+inline double calcC(int i, int j) {
 	return 1.0;
+
+	i=(i+10*Nr)%Nr;
+	j=(j+10*Nr)%Nr;
+	return H(i,j);
 }
 
 int main(int args, char* argv[]) {
-	
 	Nr = args > 1 ? atoi(argv[1]) : 100;
 	double t_max = args > 2 ? atof(argv[2]) : 1.0;
+	
+	height_from_file = args > 3 ? atoi(argv[3]) : false;
+	world_from_file = args > 4 ? atoi(argv[4]) : false;
+
+	if(height_from_file) {
+		char *heightFilename = argv[3];
+		H = readBMP(heightFilename);
+	}
+
+	if(world_from_file) {
+		char *worldFilename = argv[4];
+		world = readBMP(worldFilename);
+	}
+	else world = zeros<mat>(Nr,Nr);
 
 	double r_min = -1.0;
 	double r_max = 1.0;
 
 	double dr = (r_max-r_min)/(Nr-1); // Step length in space
-	double c_max = 1.1; // Used to determine dt and Nt
+	double c_max = 1.0; // Used to determine dt and Nt
 
 	double k = 0.5; // We require k<=0.5 for stability
 	double dt = dr/c_max*sqrt(k);
 	int Nt = t_max/dt+1;
 	double d2 = dt*dt/(dr*dr);
 	
-	vec x  = zeros<vec>(Nr,1); // Positions to calculate initial conditions
-	vec y  = zeros<vec>(Nr,1);
+	x  = zeros<vec>(Nr,1); // Positions to calculate initial conditions
+	y  = zeros<vec>(Nr,1);
 
-	// um=u^{n-1}, up=u^{n+1}, u=u^{n}
-	mat um = zeros<mat>(Nr,Nr);
-	mat u = zeros<mat>(Nr,Nr);
-	mat up = zeros<mat>(Nr,Nr);
+	u_m = zeros<mat>(Nr,Nr);
+	u_ = zeros<mat>(Nr,Nr);
+	u_p = zeros<mat>(Nr,Nr);
 
 	FILE *file = 0;
 	char *filename = new char[50];
 
-	double _x,_y,c;
+	double _x,_y,cx_m, cx_p,cy_m, cy_p, c;
 	
 	// Calculate initial conditions
+	double x0 = 0;
+	double y0 = 0;
+	double stddev = 0.001;
 	for(int i=0;i<Nr;i++) {
 		x(i) = r_min+i*dr;
 		for(int j=0;j<Nr;j++) {
 			y(j) = r_min+j*dr;
 
-			_x = x(i);
-			_y = y(j);
+			_x = x(i)-x0;
+			_y = y(j)-y0;
 
-			um(i,j) = sin(5*M_PI*exp(-(pow(_x,2)+pow(_y,2))*0.1))*exp(-(pow(_x,2)+pow(_y,2))*7);
-			u(i,j)  = sin(5*M_PI*exp(-(pow(_x,2)+pow(_y,2))*0.1))*exp(-(pow(_x,2)+pow(_y,2))*7);
-			
+			u_m(i,j) = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
+			u_(i,j)  = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
 		}
 	}
 
@@ -121,18 +179,31 @@ int main(int args, char* argv[]) {
 
 		for(int i=0;i<Nr;i++) {
 			for(int j=0;j<Nr;j++) {
-				c = calcC(x(i),y(j));
-				up(i,j) = c*d2*( u(idx(i+1),idx(j)) + u(idx(i-1),idx(j)) - 2*u(idx(i),idx(j)) ) 
-					+ c*d2*( u(idx(i),idx(j+1)) + u(idx(i),idx(j-1)) -2*u(idx(i),idx(j)) )
-					- um(idx(i),idx(j)) + 2*u(idx(i),idx(j));
-				fprintf(file,"%f ",up(i,j));
+				c = calcC(i,j);
+
+				cx_m = 0.5*(c+calcC(i-1,j));
+				cx_p = 0.5*(c+calcC(i+1,j));
+				cy_m = 0.5*(c+calcC(i,j-1));
+				cy_p = 0.5*(c+calcC(i,j+1));
+
+				double ddx = cx_p*( u(i+1,j) - u(i,j) ) - cx_m*( u(i,j) - u(i-1,j) );
+				double ddy = cy_p*( u(i,j+1) - u(i,j) ) - cy_m*( u(i,j) - u(i,j-1) );
+				u_p(i,j) = d2*(ddx + ddy) - um(i,j) + 2*u(i,j);
+
+				/*
+				u_p(i,j) = c*d2*( u(i+1,j) + u(i-1,j) - 2*u(i,j) ) 
+				 	+ c*d2*( u(i,j+1) + u(i,j-1) -2*u(i,j) )
+				 	- um(i,j) + 2*u(i,j);
+				*/
+				
+				fprintf(file,"%f ",u_p(i,j));
 			}
 			fprintf(file,"\n");
 		}
 		fclose(file);
 
-		um = u;
-		u = up;
+		u_m = u_;
+		u_ = u_p;
 	}
 
 	printf("Simulation finished after %d timesteps\n",Nt);
