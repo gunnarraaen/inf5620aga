@@ -77,33 +77,20 @@ inline int idx(int i) {
 	return (i+10*Nr)%Nr;
 }
 
-inline double u(int i,int j) {
-	return u_(idx(i),idx(j));
-}
-
-inline double um(int i,int j, int di, int dj) {
-	int i_ = i+di;
-	int ij = j+dj;
-
-	k = (i_<0) + 2*(i_ >= Nr)+4*(j_ >= Nr) + 8*(j_ < 0); // Make the if OR test and save the result
-
-	if(k) {
-		// I don't always play with bit operators, but when I do
-		// I do it because it's hard to read
-
-		// if(!world(i_+(1&k) - ((2&k)>>1),j_+((4&k)>>2) - ((8&k)>>3))) {
-		if(!world(i,j)) {
-			// This is a solid wall
-			// return u_m(i-2*(1&k) + 2*((2&k)>>1),j-2*((4&k)>>2) + 2*((8&k)>>3));
-			return u_m(i-di,j-dj);
-		}
-	}
-
-	if(!world(i,j)) {
-		return u_m(i-di,j-dj);
+inline double u(int i,int j, int di=0, int dj=0) {
+	if(world(i,j)) {
+		return u_(idx(i-di),idx(j-dj));
 	} 
 
-	return u_m(idx(i),idx(j));
+	return u_(idx(i+di),idx(j+dj));
+}
+
+inline double um(int i,int j, int di=0, int dj=0) {
+	if(world(i,j)) {
+		return u_m(idx(i-di),idx(j-dj));
+	} 
+
+	return u_m(idx(i+di),idx(j+dj));
 }
 
 inline double calcC(int i, int j) {
@@ -119,8 +106,8 @@ int main(int args, char* argv[]) {
 	double t_max = args > 2 ? atof(argv[2]) : 1.0;
 	
 	height_from_file = args > 3 ? atoi(argv[3]) : false;
-	world_from_file = args > 4 ? atoi(argv[4]) : false;
-
+	world_from_file = args > 4;
+	
 	if(height_from_file) {
 		char *heightFilename = argv[3];
 		H = readBMP(heightFilename);
@@ -156,8 +143,8 @@ int main(int args, char* argv[]) {
 	double _x,_y,cx_m, cx_p,cy_m, cy_p, c;
 	
 	// Calculate initial conditions
-	double x0 = 0;
-	double y0 = 0;
+	double x0 = -0.5;
+	double y0 = 0.0;
 	double stddev = 0.001;
 	for(int i=0;i<Nr;i++) {
 		x(i) = r_min+i*dr;
@@ -167,8 +154,8 @@ int main(int args, char* argv[]) {
 			_x = x(i)-x0;
 			_y = y(j)-y0;
 
-			u_m(i,j) = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
-			u_(i,j)  = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
+			u_m(i,j) = 0.05*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
+			u_(i,j)  = 0.05*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
 		}
 	}
 
@@ -186,9 +173,10 @@ int main(int args, char* argv[]) {
 				cy_m = 0.5*(c+calcC(i,j-1));
 				cy_p = 0.5*(c+calcC(i,j+1));
 
-				double ddx = cx_p*( u(i+1,j) - u(i,j) ) - cx_m*( u(i,j) - u(i-1,j) );
-				double ddy = cy_p*( u(i,j+1) - u(i,j) ) - cy_m*( u(i,j) - u(i,j-1) );
-				u_p(i,j) = d2*(ddx + ddy) - um(i,j) + 2*u(i,j);
+				double ddx = cx_p*( u(i,j,1) - u(i,j) ) - cx_m*( u(i,j) - u(i,j,-1) );
+				double ddy = cy_p*( u(i,j,0,1) - u(i,j) ) - cy_m*( u(i,j) - u(i,j,0,-1) );
+
+				u_p(i,j) = world(i,j) ? 0 : d2*(ddx + ddy) - um(i,j) + 2*u(i,j);
 
 				/*
 				u_p(i,j) = c*d2*( u(i+1,j) + u(i-1,j) - 2*u(i,j) ) 

@@ -1,0 +1,2 @@
+test3.mpg - sin(5*M_PI*_x)*_x*exp(-(pow(_x,2)+pow(_y,2))*7)
+test4.mpg - sin(5*M_PI*exp(-(pow(_x,2)+pow(_y,2))*0.1))*exp(-(pow(_x,2)+pow(_y,2))*7);
