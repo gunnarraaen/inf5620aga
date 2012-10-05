@@ -156,10 +156,10 @@ int main(int argc, char** argv)
 		cout << endl << argc;
 	}
 	stringstream str;
-	int write_delay = 10;
+	int write_delay = 20;
 	double Lx = 4;
-	double dt = 0.001;
-	double h = 0.02;
+	double dt = 0.0005;
+	double h = 0.005;
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
 	double **u = (double**)matrix(Nx,Nx,sizeof(double));
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
 		if (n % write_delay == 0) {
 			str.str(std::string(""));
 			str << "test.d" << ZeroPadNumber(n/write_delay);
-			print_matrix(Nx,u,str.str().c_str());
+			print_matrix(Nx,u,str.str().c_str(),2);
 		}
 	}
 	free_matrix((void**)u);

@@ -4,9 +4,9 @@ import numpy as np
 from mayavi import  mlab as ml
 movname = sys.argv[2]
 frames = int(sys.argv[1])
-dt = 0.003;
+dt = 0.001;
 Lx = 4;
-Nx = 200
+Nx = 400
 
 x = np.linspace(0,Lx,Nx);
 y = np.linspace(0,Lx,Nx);
@@ -26,7 +26,7 @@ for i in range(frames):
 	ml.surf(x,y,u,extent=extent,figure=fig,vmax=1,vmin=-0)
 #	ml.axes(figure=fig,xlabel='x',ylabel='y',zlabel='z',extent=extent)
 #	print  ml.view()
-	ml.view(45,54,547,(100,100,0), figure=fig)
+#	ml.view(45,54,547,(100,100,0), figure=fig)
 #	fig.scene.parallel_projection = True
 #	fig.scene.camera.parallel_scale = 5;
 	ml.title('t = %s' % (i*dt),figure=fig)
