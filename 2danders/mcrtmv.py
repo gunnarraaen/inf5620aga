@@ -8,7 +8,7 @@ ml.options.offscreen = True
 
 movname = sys.argv[2]
 frames = int(sys.argv[1])
-dt = 0.003;
+#dt = 0.003;
 Lx = 1;
 Nx = 200
 
@@ -27,13 +27,9 @@ for i in range(frames):
 	
 	fname = 'data/_tmp%07d.png' % i
 	ml.surf(x,y,u,extent=extent,figure=fig,vmax=0.7,vmin=-0.7)
-#	ml.axes(figure=fig,xlabel='x',ylabel='y',zlabel='z',extent=extent)
+
 	ml.view(45,54,547,(100,100,0), figure=fig)
 
-#	fig.scene.parallel_projection = True
-#	fig.scene.camera.parallel_scale = 5;
-	ml.title('t = %s' % (i*dt),figure=fig)
-	
 	ml.savefig(filename=fname,figure=fig)
 
 	print 'Saving frame', fname

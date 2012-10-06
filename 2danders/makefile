@@ -1,20 +1,19 @@
-CXX = g++
+CXX = icpc
 # Flags for optimized execs
 CXXFLAGS = 
 # Flags for debugging
 # CXXFLAGS = -ftemplate-depth-30 -g -DBZ_DEBUG
-OPTFLAG = -O3
+
 LIBS = -lm -larmadillo -fopenmp
 
-EXEC = wave
-SRC = wave.cpp
-OBJ = wave.o
+default: wave
 
-$(EXEC): $(OBJ)
-	$(CXX) $(CXXFLAGS) $(OPTFLAG) -o $(EXEC) $(OBJ) $(LIBS)
+wave.o: wave.cpp
+	${CXX} -c -O3 wave.cpp
 
-$(OBJ):
-	$(CXX) $(CXXFLAGS) $(OPTFLAG) -c $(SRC) #-fopenmp
+wave: wave.o
+	${CXX} -o wave wave.o
 	
 clean:
-	rm *.o
+	rm wave.o
+	rm wave

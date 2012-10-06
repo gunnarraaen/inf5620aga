@@ -120,6 +120,8 @@ double coeff2(double x, double y)
 }
 double coeff3(double x, double y)
 {
+	return 1.0;
+
 	if (x<0 || y<0) return 0;
 	int Lx = 4;
 	static bool used_once = false;
@@ -159,7 +161,7 @@ int main(int argc, char** argv)
 	int write_delay = 20;
 	double Lx = 4;
 	double dt = 0.0005;
-	double h = 0.005;
+	double h = 0.01;
 	int Nx = (int) ceil(Lx/h);
 	int Nt = (int) ceil(T/dt);
 	double **u = (double**)matrix(Nx,Nx,sizeof(double));
