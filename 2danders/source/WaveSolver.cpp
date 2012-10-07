@@ -1,14 +1,13 @@
 #include <WaveSolver.h>
-#include <Armadillo.h>
-using namespace arma;
+#include <CWave.h>
 
 // Mods the index on system size
-inline int idx(int i) {
+inline int WaveSolver::idx(int i) {
 	return (i+10*Nr)%Nr;
 }
 
 // Calculates the value of u_(i+di,j+dj) but takes care of the boundary conditions and world
-inline double u(int i,int j, int di=0, int dj=0) {
+inline double WaveSolver::u(int i,int j, int di, int dj) {
 	if(world(idx(i+di),idx(j+dj))) {
 		return u_(idx(i-di),idx(j-dj));
 	} 
@@ -17,7 +16,7 @@ inline double u(int i,int j, int di=0, int dj=0) {
 }
 
 // Calculates the value of u_prev(i+di,j+dj) but takes care of the boundary conditions and world
-inline double uprev(int i,int j, int di=0, int dj=0) {
+inline double WaveSolver::uprev(int i,int j, int di, int dj) {
 	if(world(idx(i+di),idx(j+dj))) {
 		return u_prev(idx(i-di),idx(j-dj));
 	} 
@@ -26,7 +25,7 @@ inline double uprev(int i,int j, int di=0, int dj=0) {
 }
 
 // Gives the c-value in the point i,j
-inline double calcC(int i, int j) {
+inline double WaveSolver::calcC(int i, int j) {
 	i=(i+10*Nr)%Nr;
 	j=(j+10*Nr)%Nr;
 	return H(i,j);
@@ -34,23 +33,30 @@ inline double calcC(int i, int j) {
 
 WaveSolver::WaveSolver() {
 	Nr = 200;
-	double t_max = 50.0;
+	max_value = 0;
+	char *file = new char[50];
+	sprintf(file,"vel.bmp");
+
+	// H = ones<mat>(Nr,Nr); 			// H contains values between 0 and 1 which are the velocities in each point
+	H = readBMP(file);
+
+	sprintf(file,"wall.bmp");
 	
-	height_from_file = false;
-	world_from_file = false;
-	
-	H = ones<mat>(Nr,Nr); 			// H contains values between 0 and 1 which are the velocities in each point
-	world = zeros<mat>(Nr,Nr); 		// World contains boolean values 0 or 1 where 1 is wall
+	// H = readBMP(file);
+
+	// world = zeros<mat>(Nr,Nr); 		// World contains boolean values 0 or 1 where 1 is wall
+	world = readBMP(file);
 
 	r_min = -1.0;
 	r_max = 1.0;               	// Square grid
+	time = 0;
 
 	dr = (r_max-r_min)/(Nr-1); 	// Step length in space
 	double c_max = 1.0;           		// Used to determine dt and Nt
 
 	double k = 0.5;               		// We require k<=0.5 for stability
 	dt = dr/c_max*sqrt(k); 		// This guarantees (I guess) stability if c_max is correct
-	Nt = t_max/dt; 
+	
 	dtdt_drdr = dt*dt/(dr*dr); 	// Constant that is used in the calculation
 	
 	x  = zeros<vec>(Nr,1); 				// Positions to calculate initial conditions
@@ -75,16 +81,17 @@ WaveSolver::WaveSolver() {
 			_x = x(i)-x0; // The x- and y-center can have an offset
 			_y = y(j)-y0;
 
-			u_prev(i,j) = 0.05*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
-			u_(i,j)  = 0.05*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
+			u_prev(i,j) = 0.2*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
+			u_(i,j)  = 0.2*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
+			max_value = max(max_value,abs(u_(i,j)));
 		}
 	}
-
-	return 0;
 }
 
 void WaveSolver::step() {
+	time += dt;
 	double cx_m, cx_p,cy_m, cy_p, c; // Temp variables for speed'n read
+	max_value = 0;
 
 	for(int i=0;i<Nr;i++) {
 		for(int j=0;j<Nr;j++) {
@@ -98,12 +105,51 @@ void WaveSolver::step() {
 			double ddx = cx_p*( u(i,j,1) - u(i,j) ) - cx_m*( u(i,j) - u(i,j,-1) );
 			double ddy = cy_p*( u(i,j,0,1) - u(i,j) ) - cy_m*( u(i,j) - u(i,j,0,-1) );
 
-			u_next(i,j) = dtdt_drdr*(ddx + ddy) - uprev(i,j) + 2*u(i,j);
+			u_next(i,j) = world(i,j) ? 0 : dtdt_drdr*(ddx + ddy) - uprev(i,j) + 2*u(i,j);
+			max_value = max(max_value,abs(u_next(i,j)));
 		}
 	}
 
 	u_prev = u_;
 	u_ = u_next;
+}
+
+void WaveSolver::Render() {
+	glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    double r,g,b;
+    
+    for(int i=0;i<Nr-1;i++) {
+        for(int j=0;j<Nr-1;j++) {
+        	
+            glBegin(GL_TRIANGLES);
+        	r = (u_(i,j) > 0) ? u_(i,j)/max_value : 0;
+        	g = 1-30*abs(u_(i,j));
+        	b = (u_(i,j) < 0) ? -u_(i,j)/max_value : 0;
+        	
+            glColor4f(r, g, b, 1.0);
+
+            glVertex3f( x(i)   ,  y(j)   , u_(i,j)   );
+            glVertex3f( x(i+1) ,  y(j)   , u_(i+1,j) );
+            glVertex3f( x(i)   ,  y(j+1) , u_(i,j+1) );
+
+            glEnd();
+
+            glBegin(GL_TRIANGLES);
+
+            glVertex3f( x(i+1)   ,  y(j+1)   , u_(i+1,j+1)   );
+            glVertex3f( x(i+1)   ,  y(j)     , u_(i+1,j) );
+            glVertex3f( x(i)     ,  y(j+1)   , u_(i,j+1) );
+
+            glEnd();
+        }
+    }
+
+    glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
 }
 
 mat readBMP(char* filename)
@@ -141,7 +187,7 @@ mat readBMP(char* filename)
     		int b = data[pixelIndex];
 
     		double avg = (r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
-    		img(row,col) = avg;
+    		img(row,width - col - 1) = avg;
 
     		pixelCount++;
     		pixelIndex+=3; // Each pixel has 3 bytes, RGB

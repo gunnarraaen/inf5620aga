@@ -3,16 +3,13 @@
 #include <CApplication.h>
 #include <CDots.h>
 #include <CPoints.h>
+#include <WaveSolver.h>
 
 using namespace std;
 
 class Variables  {
 public:
-    double time;
-    int    Nr;
-    int    Nt;
-
-    CPoints points;
+    WaveSolver solver;
 };
 
 class CWave : public CApplication {

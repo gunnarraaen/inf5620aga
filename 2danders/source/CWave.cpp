@@ -9,18 +9,17 @@ void CWave::Update(void) {
     InternalUpdate();
     Events();
 
-    var.time+=0.002;
-
-    var.points.Update();
+    var.solver.step();
+    var.solver.step();
+    var.solver.step();
 }  
 
 void CWave::Initialize_() {
     if (Initialized)
     return;
+    
+    var.solver = WaveSolver();
 
-    var.time = 0;
-
-    var.points.Initialize(200, ogl);
     Initialized = true;
 }  
 
@@ -59,20 +58,20 @@ void CWave::Display (void) {
 
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |GL_STENCIL_BUFFER_BIT); 
 
-    double A = 10;
+    ogl.setperspective(60);
+    double x = cos(var.solver.time);
+    double y = sin(var.solver.time);
 
-    ogl.setperspective(75);
-    double x = cos(var.time);
-    double y = sin(var.time);
-
-    ogl.camera = CVector(x,y,1);
+    ogl.camera = CVector(0.0,-2.0,1.3);
+    // ogl.camera = CVector(x,y,1.3);
     ogl.ypr = CVector(0,0,90); // Rotate camera
 
     ogl.target = CVector(0,0,0);
     ogl.setup_camera();
 
-    var.points.Render();
-    RenderAxis();
+    // var.points.Render();
+    var.solver.Render();
+    // RenderAxis();
 
     glutSwapBuffers(); 
     Events();
