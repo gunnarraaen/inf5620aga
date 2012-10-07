@@ -45,4 +45,4 @@ def mcrtmv(frames, mvname, dt,Lx,Ly,Nx,Ny):
 		print 'Saving frame', fname
 
 	fig.scene.disable_render = False
-	os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=20 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o %s.mpg" % movname);
+	os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=20 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o %s.mpg" % mvname);
