@@ -32,6 +32,7 @@ inline double WaveSolver::calcC(int i, int j) {
 }
 
 WaveSolver::WaveSolver() {
+	render_wall = false;
 	Nr = 200;
 	max_value = 0;
 	char *file = new char[50];
@@ -110,6 +111,61 @@ void WaveSolver::step() {
 	u_ = u_next;
 }
 
+void WaveSolver::RenderWall(int i,int j) {
+	double z_top = 0.2;
+	double z_bot = 0.0;
+
+	glColor4f(0.8, 0.8, 0.8, 1.0);
+
+	glBegin(GL_POLYGON);
+	glNormal3f(0,0,1);
+	glVertex3f( x(i)     ,  y(j)   , z_top );
+	glVertex3f( x(i+1)   ,  y(j)   , z_top );
+	glVertex3f( x(i)     ,  y(j+1) , z_top );
+	glVertex3f( x(i+1)   ,  y(j+1) , z_top );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	glNormal3f(0,0,-1);
+	glVertex3f( x(i)     ,  y(j)     , z_bot );
+	glVertex3f( x(i+1)   ,  y(j)     , z_bot );
+	glVertex3f( x(i)     ,  y(j+1)   , z_bot );
+	glVertex3f( x(i+1)   ,  y(j+1)   , z_bot );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	glNormal3f(1,0,0);
+	glVertex3f( x(i+1)     ,  y(j)     , z_bot );
+	glVertex3f( x(i+1)     ,  y(j)     , z_top );
+	glVertex3f( x(i+1)     ,  y(j+1)   , z_bot );
+	glVertex3f( x(i+1)     ,  y(j+1)   , z_top );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	glNormal3f(-1,0,0);
+	glVertex3f( x(i)     ,  y(j)     , z_bot );
+	glVertex3f( x(i)     ,  y(j)     , z_top );
+	glVertex3f( x(i)     ,  y(j+1)   , z_bot );
+	glVertex3f( x(i)     ,  y(j+1)   , z_top );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	glNormal3f(0,1,0);
+	glVertex3f( x(i+1)  ,  y(j+1)   , z_bot );
+	glVertex3f( x(i)    ,  y(j+1)   , z_top );
+	glVertex3f( x(i+1)  ,  y(j+1)   , z_bot );
+	glVertex3f( x(i)    ,  y(j+1)   , z_top );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	glNormal3f(0,-1,0);
+	glVertex3f( x(i+1)  ,  y(j)   , z_bot );
+	glVertex3f( x(i)    ,  y(j)   , z_top );
+	glVertex3f( x(i+1)  ,  y(j)   , z_bot );
+	glVertex3f( x(i)    ,  y(j)   , z_top );
+	glEnd();
+}
+
 void WaveSolver::Render() {
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -119,13 +175,13 @@ void WaveSolver::Render() {
     
     for(int i=0;i<Nr-1;i++) {
         for(int j=0;j<Nr-1;j++) {
-        	
             glBegin(GL_TRIANGLES);
         	r = (u_(i,j) > 0) ? u_(i,j)/max_value : 0;
         	g = 1.0-abs(u_(i,j))/max_value;
         	b = (u_(i,j) < 0) ? -u_(i,j)/max_value : 0;
         	
             glColor4f(r, g, b, 1.0);
+            if(world(i,j)) glColor4f(1, 1, 1, 1.0);
 
             glVertex3f( x(i)   ,  y(j)   , u_(i,j)   );
             glVertex3f( x(i+1) ,  y(j)   , u_(i+1,j) );
@@ -140,6 +196,8 @@ void WaveSolver::Render() {
             glVertex3f( x(i)     ,  y(j+1)   , u_(i,j+1) );
 
             glEnd();
+            
+            if(render_wall && world(i,j)) RenderWall(i,j);
         }
     }
 
