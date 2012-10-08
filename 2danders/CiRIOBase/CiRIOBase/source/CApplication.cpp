@@ -32,17 +32,18 @@ void CApplication::Clear (void) {
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |GL_STENCIL_BUFFER_BIT); 
 }
 
-void CApplication::InternalKeyboard (unsigned char k, int  x, int y)  {
-  key = k;
+void CApplication::InternalKeyboard (unsigned char k, int  x, int y) {
+    key = k;
 
+    if (key==27) 
+        exit(1);
 
-  if (key==27) 
-    exit(1);
+    if (key=='p') 
+        Pause = !Pause;
 
-  if (key=='p') 
-    Pause = !Pause;
+    //    key = 0;
 
-  //    key = 0;
+    cout << key << endl;
 
 }
 
@@ -90,6 +91,8 @@ void CApplication::mousebutton(int button, int state, int x, int y) {
     leftmousebutton=0;
     //    fex.drag = false;
   }
+
+  cout << button << endl;
   
   mouse(x,y);
   dragmouse(x,y);

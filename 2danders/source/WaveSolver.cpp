@@ -37,27 +37,23 @@ WaveSolver::WaveSolver() {
 	char *file = new char[50];
 	sprintf(file,"vel.bmp");
 
-	// H = ones<mat>(Nr,Nr); 			// H contains values between 0 and 1 which are the velocities in each point
 	H = readBMP(file);
 
 	sprintf(file,"wall.bmp");
 	
-	// H = readBMP(file);
-
-	// world = zeros<mat>(Nr,Nr); 		// World contains boolean values 0 or 1 where 1 is wall
 	world = readBMP(file);
 
 	r_min = -1.0;
-	r_max = 1.0;               	// Square grid
+	r_max = 1.0;               			// Square grid
 	time = 0;
 
-	dr = (r_max-r_min)/(Nr-1); 	// Step length in space
+	dr = (r_max-r_min)/(Nr-1);		 	// Step length in space
 	double c_max = 1.0;           		// Used to determine dt and Nt
 
 	double k = 0.5;               		// We require k<=0.5 for stability
-	dt = dr/c_max*sqrt(k); 		// This guarantees (I guess) stability if c_max is correct
+	dt = dr/c_max*sqrt(k); 				// This guarantees (I guess) stability if c_max is correct
 	
-	dtdt_drdr = dt*dt/(dr*dr); 	// Constant that is used in the calculation
+	dtdt_drdr = dt*dt/(dr*dr); 			// Constant that is used in the calculation
 	
 	x  = zeros<vec>(Nr,1); 				// Positions to calculate initial conditions
 	y  = zeros<vec>(Nr,1);				
@@ -69,8 +65,8 @@ WaveSolver::WaveSolver() {
 	double _x,_y; // Temp variables for speed'n read
 	
 	// Calculate initial conditions
-	double x0 = 0.5;
-	double y0 = 0;
+	double x0 = 0;
+	double y0 = -0.5;
 	double stddev = 0.001;
 
 	for(int i=0;i<Nr;i++) {
@@ -78,7 +74,7 @@ WaveSolver::WaveSolver() {
 		for(int j=0;j<Nr;j++) {
 			y(j) = r_min+j*dr; 
 
-			_x = x(i)-x0; // The x- and y-center can have an offset
+			_x = x(i)-x0; 					// The x- and y-center can have an offset
 			_y = y(j)-y0;
 
 			u_prev(i,j) = 0.2*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
@@ -90,14 +86,14 @@ WaveSolver::WaveSolver() {
 
 void WaveSolver::step() {
 	time += dt;
-	double cx_m, cx_p,cy_m, cy_p, c; // Temp variables for speed'n read
+	double cx_m, cx_p,cy_m, cy_p, c; 		// Temp variables for speed'n read
 	max_value = 0;
 
 	for(int i=0;i<Nr;i++) {
 		for(int j=0;j<Nr;j++) {
 			c = calcC(i,j);
 
-			cx_m = 0.5*(c+calcC(i-1,j)); // Calculate the 4 c's we need. We need c_{i \pm 1/2,j} and c_{i,j \pm 1/2}
+			cx_m = 0.5*(c+calcC(i-1,j)); 	// Calculate the 4 c's we need. We need c_{i \pm 1/2,j} and c_{i,j \pm 1/2}
 			cx_p = 0.5*(c+calcC(i+1,j));
 			cy_m = 0.5*(c+calcC(i,j-1));
 			cy_p = 0.5*(c+calcC(i,j+1));
@@ -126,7 +122,7 @@ void WaveSolver::Render() {
         	
             glBegin(GL_TRIANGLES);
         	r = (u_(i,j) > 0) ? u_(i,j)/max_value : 0;
-        	g = 1-30*abs(u_(i,j));
+        	g = 1.0-abs(u_(i,j))/max_value;
         	b = (u_(i,j) < 0) ? -u_(i,j)/max_value : 0;
         	
             glColor4f(r, g, b, 1.0);
@@ -177,30 +173,30 @@ mat readBMP(char* filename)
     int pixelCount = 0;
     int pixelIndex = 0;
 
-    int row = height-1; // BMP-files start with the lower left pixel, row for row
+    int row = 0; // BMP-files start with the lower left pixel, row for row
     int col = 0;
 
     for(i = 0; i < pixels; i++)
     {
-    		int r = data[pixelIndex+2]; // RGB values are interchanged in the file format
-    		int g = data[pixelIndex+1];
-    		int b = data[pixelIndex];
+		int r = data[pixelIndex+2]; // RGB values are interchanged in the file format
+		int g = data[pixelIndex+1];
+		int b = data[pixelIndex];
 
-    		double avg = (r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
-    		img(row,width - col - 1) = avg;
+		double avg = (r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
+		img(width - col - 1,row) = avg;
 
-    		pixelCount++;
-    		pixelIndex+=3; // Each pixel has 3 bytes, RGB
-    		
-    		if(++col == width) {
-    			// BMP-format is stupid since it wants each row to have 4n bytes, so it adds 
-    			// the remaining pixels before next row
-    			int padding = col % 4;
+		pixelCount++;
+		pixelIndex+=3; // Each pixel has 3 bytes, RGB
+		
+		if(++col == width) {
+			// BMP-format is stupid since it wants each row to have 4n bytes, so it adds 
+			// the remaining pixels before next row
+			int padding = col % 4;
 
-    			col = 0;
-    			pixelIndex+=padding;
-    			row--;
-    		}
+			col = 0;
+			pixelIndex+=padding;
+			row++;
+		}
     }
 
     return img;

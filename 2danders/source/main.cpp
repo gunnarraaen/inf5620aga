@@ -1,3 +1,4 @@
+#define ARMA_NO_DEBUG
 #include <CWave.h>
 
 int main(int a, char** b) {

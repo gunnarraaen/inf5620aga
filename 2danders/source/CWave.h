@@ -10,6 +10,8 @@ using namespace std;
 class Variables  {
 public:
     WaveSolver solver;
+    double time;
+    int speed;
 };
 
 class CWave : public CApplication {
@@ -26,6 +28,4 @@ public:
 
     // Handle events (keys, mouse)
     static void Events();
-
-    static void RenderAxis();
 };

@@ -1,56 +1,29 @@
 #include <CWave.h>
 #include <vector>
+#include <GLUT/glut.h>
 
 Variables CWave::var;
 
 void CWave::Update(void) {
-    Initialize_();
+    if(!Initialized) Initialize_();
     glutPostRedisplay();
     InternalUpdate();
     Events();
 
-    var.solver.step();
-    var.solver.step();
-    var.solver.step();
+    for(int i=0;i<var.speed;i++) 
+        var.solver.step();
+
+    // cout << rightmousebutton << endl;
+    // cout << MouseDiff << endl;
 }  
 
 void CWave::Initialize_() {
-    if (Initialized)
-    return;
-    
     var.solver = WaveSolver();
+    var.time = 0;
+    var.speed = 3;
 
     Initialized = true;
 }  
-
-void CWave::RenderAxis() {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-
-    glBegin(GL_LINES);
-    glColor4f(1.0, 0.0,0.0, 1.0);
-    glVertex3f(0,0,0);
-    glVertex3f(1,0,0);
-    glEnd();
-
-    glBegin(GL_LINES);
-    glColor4f(0.0, 1.0,0.0, 1.0);
-    glVertex3f(0,0,0);
-    glVertex3f(0,1,0);
-    glEnd();
-
-    glBegin(GL_LINES);
-    glColor4f(0.0, 0.0,1.0, 1.0);
-    glVertex3f(0,0,0);
-    glVertex3f(0,0,1);
-    glEnd();
-
-    glDisable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-}
 
 void CWave::Display (void) {
     if (!Initialized)
@@ -59,10 +32,9 @@ void CWave::Display (void) {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |GL_STENCIL_BUFFER_BIT); 
 
     ogl.setperspective(60);
-    double x = cos(var.solver.time);
-    double y = sin(var.solver.time);
-
+    
     ogl.camera = CVector(0.0,-2.0,1.3);
+    
     // ogl.camera = CVector(x,y,1.3);
     ogl.ypr = CVector(0,0,90); // Rotate camera
 
@@ -77,11 +49,26 @@ void CWave::Display (void) {
     Events();
 }
 
-
 void CWave::Events ()  {
     bool go = true;
     if (key==27)
         exit(1);
+    if (key=='1')
+        var.speed = 1;
+    if (key=='2')
+        var.speed = 2;
+    if (key=='3')
+        var.speed = 3;
+    if (key=='4')
+        var.speed = 4;
+    if (key=='5')
+        var.speed = 5;
+    if (key=='6')
+        var.speed = 6;
+    if (key=='7')
+        var.speed = 7;
+    if (key=='8')
+        var.speed = 8;
+    if (key=='9')
+        var.speed = 9;
 }
-
-
