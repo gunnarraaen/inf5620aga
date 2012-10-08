@@ -32,6 +32,16 @@ inline double WaveSolver::calcC(int i, int j) {
 	return H(i,j);
 }
 
+
+
+void WaveSolver::copyToGrid(AObject& grid) {
+	for (int i=0;i<Nr;i++)
+		for (int j=0;j<Nr;j++) {
+			grid.getGridPos(i,j)->pos.z = u_(i,j);
+		}	
+}
+
+
 WaveSolver::WaveSolver(CIniFile &ini) {
 	render_wall = ini.getbool("render_wall");
 	Nr = ini.getint("grid_size");
@@ -39,6 +49,9 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	
 	H = readBMP((char*)ini.getstring("velocity_file").c_str());	
 	world = readBMP((char*)ini.getstring("wall_file").c_str());	
+	
+	render_ground = false;
+	render_wave = true;
 
 	max_value = 0;
 	r_min = -1.0;
@@ -86,6 +99,7 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	u_prev *= amplitude/max_value;
 	u_ *= amplitude/max_value;
 	max_value = amplitude;
+
 }
 
 void WaveSolver::step() {
@@ -118,60 +132,6 @@ void WaveSolver::step() {
 	u_ = u_next;
 }
 
-void WaveSolver::RenderWall(int i,int j) {
-	double z_top = 0.2;
-	double z_bot = 0.0;
-
-	glColor4f(0.8, 0.8, 0.8, 1.0);
-
-	glBegin(GL_POLYGON);
-	glNormal3f(0,0,1);
-	glVertex3f( x(i)     ,  y(j)   , z_top );
-	glVertex3f( x(i+1)   ,  y(j)   , z_top );
-	glVertex3f( x(i)     ,  y(j+1) , z_top );
-	glVertex3f( x(i+1)   ,  y(j+1) , z_top );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	glNormal3f(0,0,-1);
-	glVertex3f( x(i)     ,  y(j)     , z_bot );
-	glVertex3f( x(i+1)   ,  y(j)     , z_bot );
-	glVertex3f( x(i)     ,  y(j+1)   , z_bot );
-	glVertex3f( x(i+1)   ,  y(j+1)   , z_bot );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	glNormal3f(1,0,0);
-	glVertex3f( x(i+1)     ,  y(j)     , z_bot );
-	glVertex3f( x(i+1)     ,  y(j)     , z_top );
-	glVertex3f( x(i+1)     ,  y(j+1)   , z_bot );
-	glVertex3f( x(i+1)     ,  y(j+1)   , z_top );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	glNormal3f(-1,0,0);
-	glVertex3f( x(i)     ,  y(j)     , z_bot );
-	glVertex3f( x(i)     ,  y(j)     , z_top );
-	glVertex3f( x(i)     ,  y(j+1)   , z_bot );
-	glVertex3f( x(i)     ,  y(j+1)   , z_top );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	glNormal3f(0,1,0);
-	glVertex3f( x(i+1)  ,  y(j+1)   , z_bot );
-	glVertex3f( x(i)    ,  y(j+1)   , z_top );
-	glVertex3f( x(i+1)  ,  y(j+1)   , z_bot );
-	glVertex3f( x(i)    ,  y(j+1)   , z_top );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	glNormal3f(0,-1,0);
-	glVertex3f( x(i+1)  ,  y(j)   , z_bot );
-	glVertex3f( x(i)    ,  y(j)   , z_top );
-	glVertex3f( x(i+1)  ,  y(j)   , z_bot );
-	glVertex3f( x(i)    ,  y(j)   , z_top );
-	glEnd();
-}
 
 // Fonts
 void* glutFonts[7] = { 
@@ -199,53 +159,170 @@ void glutPrint(float x, float y, void* font, char* text, float r, float g, float
     if(!blending) glDisable(GL_BLEND); 
 }
 
+void WaveSolver::RenderWall(int i,int j, int di, int dj) {
+	glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+
+
+	double z_top = 0.2;
+	double z_bot = -0.4*H.max();
+
+	glColor4f(1, 1, 1, 0.1);
+
+	glBegin(GL_POLYGON);
+	// glNormal3f(0,0,1);
+	glVertex3f( x(0)      ,  y(0)    , z_bot );
+	glVertex3f( x(Nr-1)   ,  y(0)    , z_bot );
+	glVertex3f( x(Nr-1)   ,  y(0)    , z_top );
+	glVertex3f( x(0)      ,  y(0)    , z_top );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	// glNormal3f(0,0,1);
+	glVertex3f( x(0)      ,  y(0)       , z_bot );
+	glVertex3f( x(0)      ,  y(Nr-1)    , z_bot );
+	glVertex3f( x(0)      ,  y(Nr-1)    , z_top );
+	glVertex3f( x(0)      ,  y(0)       , z_top );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	// glNormal3f(0,0,1);
+	glVertex3f( x(0)      ,  y(Nr-1)    , z_bot );
+	glVertex3f( x(Nr-1)   ,  y(Nr-1)    , z_bot );
+	glVertex3f( x(Nr-1)   ,  y(Nr-1)    , z_top );
+	glVertex3f( x(0)      ,  y(Nr-1)    , z_top );
+	glEnd();
+
+	glBegin(GL_POLYGON);
+	// glNormal3f(0,0,1);
+	glVertex3f( x(Nr-1)      ,  y(Nr-1)    , z_bot );
+	glVertex3f( x(Nr-1)      ,  y(0)       , z_bot );
+	glVertex3f( x(Nr-1)      ,  y(0)       , z_top );
+	glVertex3f( x(Nr-1)      ,  y(Nr-1)    , z_top );
+	glEnd();
+
+	glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+}
+
+inline void WaveSolver::RenderWave(int i,int j) {
+	double r,g,b;
+	
+	if(world(i,j)) glColor4f(1, 1, 1, 1.0);
+    else {
+    	r = u_(i,j)/max_value;
+    	g = 1 - abs(u_(i,j)/max_value);
+    	b = -u(i,j)/max_value;
+
+    	
+        glColor4f(r, g, b, 0.7);
+    }
+
+    double A = 3.0;
+    
+    // The first triangle
+    // ***
+    // **
+    // *
+
+    CVector p1(x(i)    ,  y(j)   , A*u_(i,j));
+    CVector p2( x(i+1) ,  y(j)   , A*u_(i+1,j) );
+    CVector p3( x(i)   ,  y(j+1) , A*u_(i,j+1) );
+    CVector normal = (p2-p3).Cross(p1-p3).Normalize();
+    
+
+    glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f( x(i)   ,  y(j)   , A*u_(i,j)   );
+    glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f( x(i+1) ,  y(j)   , A*u_(i+1,j) );
+    glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f( x(i)   ,  y(j+1) , A*u_(i,j+1) );
+
+
+    // The other triangle
+    //   *
+    //  **
+    // ***
+
+    p1 = CVector( x(i+1)   ,  y(j)   , A*u_(i+1,j) );
+    p2 = CVector(  x(i+1)   ,  y(j+1)   , A*u_(i+1,j+1) );
+    p3 = CVector( x(i)     ,  y(j+1)   , A*u_(i,j+1) );
+
+    normal = (p2-p3).Cross(p1-p3).Normalize();
+
+    glNormal3f(normal.x, normal.y, normal.z);
+
+    glVertex3f( x(i+1)   ,  y(j)     , A*u_(i+1,j)   );
+    glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f( x(i+1)   ,  y(j+1)   , A*u_(i+1,j+1) );
+    glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f( x(i)     ,  y(j+1)   , A*u_(i,j+1) );
+
+}
+
+inline void WaveSolver::RenderGround(int i,int j) {
+	double color = 0.3-0.2*H(i,j);
+    glColor4f(color, color, color, 1.0);
+
+    glBegin(GL_TRIANGLES);
+
+    glVertex3f( x(i)   ,  y(j)   , -0.4*H(i,j)   );
+    glVertex3f( x(i+1) ,  y(j)   , -0.4*H(i+1,j) );
+    glVertex3f( x(i)   ,  y(j+1) , -0.4*H(i,j+1) );
+
+    glEnd();
+
+    glBegin(GL_TRIANGLES);
+
+    glVertex3f( x(i+1)   ,  y(j+1)   , -0.4*H(i+1,j+1)   );
+    glVertex3f( x(i+1)   ,  y(j)     , -0.4*H(i+1,j) );
+    glVertex3f( x(i)     ,  y(j+1)   , -0.4*H(i,j+1) );
+
+    glEnd();
+}
+
 // Divide each square (i,j), (i+1,j), (i,j+1), (i+1,j+1) into two triangles and draw them
 void WaveSolver::Render() {
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
-    double r,g,b;
-    
+
+
+
+    glBegin(GL_TRIANGLES);
     for(int i=0;i<Nr-1;i++) {
         for(int j=0;j<Nr-1;j++) {
-            if(world(i,j)) glColor4f(1, 1, 1, 1.0);
-            else {
-	        	r = (u_(i,j) > 0) ? u_(i,j)/max_value : 0;
-	        	g = 1.0-abs(u_(i,j))/max_value;
-	        	b = (u_(i,j) < 0) ? -u_(i,j)/max_value : 0;
-	        	
-	            glColor4f(r, g, b, 1.0);
-	        }
-            
-
-
-            // The first triangle
-            // ***
-            // **
-            // *
-            glBegin(GL_TRIANGLES);
-
-            glVertex3f( x(i)   ,  y(j)   , u_(i,j)   );
-            glVertex3f( x(i+1) ,  y(j)   , u_(i+1,j) );
-            glVertex3f( x(i)   ,  y(j+1) , u_(i,j+1) );
-
-            glEnd();
-
-            // The other triangle
-            //   *
-            //  **
-            // ***
-            glBegin(GL_TRIANGLES);
-
-            glVertex3f( x(i+1)   ,  y(j+1)   , u_(i+1,j+1)   );
-            glVertex3f( x(i+1)   ,  y(j)     , u_(i+1,j) );
-            glVertex3f( x(i)     ,  y(j+1)   , u_(i,j+1) );
-
-            glEnd();
-            
-            if(render_wall && world(i,j)) RenderWall(i,j);
+        	if(render_wave) RenderWave(i,j);
         }
+    }
+    glEnd();
+
+
+    //glDisable(GL_BLEND);
+    //glutSolidSphere(0.5, 16,16);
+
+//    waveShader.End();
+
+    glBegin(GL_TRIANGLES);
+    for(int i=0;i<Nr-1;i++) {
+        for(int j=0;j<Nr-1;j++) {
+			if(render_ground) RenderGround(i,j);
+        }
+    }
+    glEnd();
+
+
+
+
+    if(render_wall) {
+    	RenderWall(0,0,Nr-1,1);
+    	RenderWall(0,0,1,Nr-1);
+    	RenderWall(Nr-1,0,-1,Nr-1);
+    	RenderWall(0,Nr-1,Nr-1,-1);
     }
 
     glDisable(GL_BLEND);

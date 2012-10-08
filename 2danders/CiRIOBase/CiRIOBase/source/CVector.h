@@ -217,6 +217,7 @@ class CVector  {
              
   }
 
+
   CVector RandomUniform() {
     return CVector(CMath::RandomUniform()*x - x/2.0,  CMath::RandomUniform()*y - y/2.0, CMath::RandomUniform()*z - z/2.0); 
   }
