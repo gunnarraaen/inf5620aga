@@ -16,8 +16,9 @@ void CWave::Update(void) {
 
 void CWave::Initialize_() {
     var.solver = WaveSolver(ini);
-    var.speed = 3;  
+    var.speed = 2;
     var.theta = 3*M_PI/2;
+    var.zoom  = 1.0;
     var.waveGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     var.groundGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     var.groundGrid.copyGridFromBMP(var.solver.ground);
@@ -95,11 +96,9 @@ void CWave::renderWave() {
     var.waveGrid.calculateGridFaceNormals();
     var.waveGrid.calculateGridVertexNormals();
 
-    float A = 5;
-    float B = 2;
-
-    // var.waveShader.lightpos.Set(A*cos(var.solver.time*B),A*sin(var.solver.time*B),1);
-    var.waveShader.lightpos.Set(1,1,1);
+    double w = 0.5;
+    var.waveShader.lightpos.Set(2*cos(var.solver.time*w),2*sin(var.solver.time*w),1);
+    
     var.waveShader.Start();
 
     glColor4f(0,1,0,1);
@@ -135,6 +134,7 @@ void CWave::Display (void) {
     
     // ogl.camera = CVector(0.0,-2.0,1.3);
     ogl.camera = CVector(x,y,1.3);
+    ogl.camera = ogl.camera * var.zoom;
     
     ogl.ypr = CVector(0,0,90); // Rotate camera
 
@@ -180,9 +180,13 @@ void CWave::Events ()  {
     if (key=='e')
         var.render_wall = !var.render_wall;
     if (key=='a')
-        var.theta -= 0.1;
+        var.theta -= 0.05;
     if (key=='d')
-        var.theta += 0.1;
+        var.theta += 0.05;
+    if (key=='+')
+        var.zoom -= 0.05;
+    if (key=='-')
+        var.zoom += 0.05;
 
     key = '0';
 

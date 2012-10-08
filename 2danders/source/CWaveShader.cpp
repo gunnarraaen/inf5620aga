@@ -44,20 +44,13 @@ CWaveShader::CWaveShader() {
 	"  gl_FragColor = val*light; \n"
 	"  gl_FragColor.w = 0.7;"
 	"}\n");
-
-
-
-
 }
-
-
 
 void CGroundShader::Initialize(string s) {
 
   ((CShaderParent*)this)->Initialize(s);
 
 }
-
 
 void CGroundShader::Start() {
   Shader->begin();

@@ -82,7 +82,6 @@ void AObject::RenderTriangles() {
 	glBegin(GL_TRIANGLES);
 	for (int i=0;i<faces.size();i++) {
 
-		
 		for (int j=0;j<3;j++) {
 			AVertex *v = &vertices[ faces [i].face[j]];
 			glNormal3f( v->normal.x, v->normal.y, v->normal.z);

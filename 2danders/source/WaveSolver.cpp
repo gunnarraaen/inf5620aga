@@ -29,7 +29,7 @@ inline double WaveSolver::uprev(int i,int j, int di, int dj) {
 inline double WaveSolver::calcC(int i, int j) {
 	i=(i+10*Nr)%Nr;
 	j=(j+10*Nr)%Nr;
-	return min(ground(i,j),1.0);
+	return max(1-ground(i,j),1.0);
 }
 
 
@@ -62,7 +62,7 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	double c_max = 1.0;       		// Used to determine dt and Nt
 
 	double k = 0.5;               		// We require k<=0.5 for stability
-	dt = dr/sqrt(2*c_max); 				// This guarantees (I guess) stability if c_max is correct
+	dt = 0.9*dr/sqrt(2*c_max); 				// This guarantees (I guess) stability if c_max is correct
 	
 	dtdt_drdr = dt*dt/(dr*dr); 			// Constant that is used in the calculation
 	
