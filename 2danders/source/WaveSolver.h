@@ -24,6 +24,7 @@ public:
 	double dtdt_drdr;
 	double r_min;
 	double r_max;
+	// vec max_value;
 	double max_value;
 	bool render_wall;
 

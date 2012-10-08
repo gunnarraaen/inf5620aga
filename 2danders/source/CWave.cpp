@@ -12,9 +12,6 @@ void CWave::Update(void) {
 
     for(int i=0;i<var.speed;i++) 
         var.solver.step();
-
-    // cout << rightmousebutton << endl;
-    // cout << MouseDiff << endl;
 }  
 
 void CWave::Initialize_() {
@@ -29,21 +26,18 @@ void CWave::Display (void) {
     if (!Initialized)
     return;
 
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |GL_STENCIL_BUFFER_BIT); 
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); 
 
     ogl.setperspective(60);
     
     ogl.camera = CVector(0.0,-2.0,1.3);
     
-    // ogl.camera = CVector(x,y,1.3);
     ogl.ypr = CVector(0,0,90); // Rotate camera
 
     ogl.target = CVector(0,0,0);
     ogl.setup_camera();
 
-    // var.points.Render();
     var.solver.Render();
-    // RenderAxis();
 
     glutSwapBuffers(); 
     Events();

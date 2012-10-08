@@ -65,10 +65,23 @@ WaveSolver::WaveSolver() {
 
 	double _x,_y; // Temp variables for speed'n read
 	
+
+	sprintf(file,"init.bmp");
+
+	/*
+	u_prev = 0.1*readBMP(file);
+	u_     = 0.1*readBMP(file);
+	
+	for(int i=0;i<Nr;i++) {
+		x(i) = r_min+i*dr;
+		y(i) = r_min+i*dr;
+	}
+	*/
+
 	// Calculate initial conditions
 	double x0 = 0;
-	double y0 = -0.5;
-	double stddev = 0.001;
+	double y0 = -0.7;
+	double stddev = 0.0005;	
 
 	for(int i=0;i<Nr;i++) {
 		x(i) = r_min+i*dr;
@@ -83,6 +96,7 @@ WaveSolver::WaveSolver() {
 			max_value = max(max_value,abs(u_(i,j)));
 		}
 	}
+	
 }
 
 void WaveSolver::step() {
@@ -101,8 +115,10 @@ void WaveSolver::step() {
 
 			double ddx = cx_p*( u(i,j,1) - u(i,j) ) - cx_m*( u(i,j) - u(i,j,-1) );
 			double ddy = cy_p*( u(i,j,0,1) - u(i,j) ) - cy_m*( u(i,j) - u(i,j,0,-1) );
+			double ddt_rest = - uprev(i,j) + 2*u(i,j);
+			double dt = 0;
 
-			u_next(i,j) = world(i,j) ? 0 : dtdt_drdr*(ddx + ddy) - uprev(i,j) + 2*u(i,j);
+			u_next(i,j) = world(i,j) ? 0 : dtdt_drdr*(ddx + ddy) + ddt_rest + dt;
 			max_value = max(max_value,abs(u_next(i,j)));
 		}
 	}
@@ -166,6 +182,7 @@ void WaveSolver::RenderWall(int i,int j) {
 	glEnd();
 }
 
+// Divide each square (i,j), (i+1,j), (i,j+1), (i+1,j+1) into two triangles and draw them
 void WaveSolver::Render() {
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -216,7 +233,7 @@ mat readBMP(char* filename)
     // extract image height and width from header
     int fileSize = *(int*)&info[2];
     
-    int width = *(int*)&info[18];
+    int width  = *(int*)&info[18];
     int height = *(int*)&info[22];
     int pixels = width*height;
 
@@ -241,7 +258,7 @@ mat readBMP(char* filename)
 		int b = data[pixelIndex];
 
 		double avg = (r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
-		img(width - col - 1,row) = avg;
+		img(col,row) = avg;
 
 		pixelCount++;
 		pixelIndex+=3; // Each pixel has 3 bytes, RGB
