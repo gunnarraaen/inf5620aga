@@ -34,7 +34,7 @@ inline double WaveSolver::calcC(int i, int j) {
 WaveSolver::WaveSolver() {
 	render_wall = false;
 	Nr = 200;
-	dampingFactor = 1;
+	dampingFactor = 0;
 	max_value = 0;
 	char *file = new char[50];
 	sprintf(file,"vel.bmp");
@@ -50,10 +50,10 @@ WaveSolver::WaveSolver() {
 	time = 0;
 
 	dr = (r_max-r_min)/(Nr-1);		 	// Step length in space
-	double c_max = 1.0;           		// Used to determine dt and Nt
+	double c_max = H.max();           		// Used to determine dt and Nt
 
 	double k = 0.5;               		// We require k<=0.5 for stability
-	dt = dr/c_max*sqrt(k); 				// This guarantees (I guess) stability if c_max is correct
+	dt = dr/sqrt(2*c_max); 				// This guarantees (I guess) stability if c_max is correct
 	
 	dtdt_drdr = dt*dt/(dr*dr); 			// Constant that is used in the calculation
 	
@@ -171,7 +171,7 @@ void WaveSolver::RenderWall(int i,int j) {
 	glEnd();
 }
 
-// Here are the fonts: 
+// Fonts
 void* glutFonts[7] = { 
     GLUT_BITMAP_9_BY_15, 
     GLUT_BITMAP_8_BY_13, 
@@ -182,7 +182,6 @@ void* glutFonts[7] = {
     GLUT_BITMAP_HELVETICA_18 
 }; 
 
-// Here is the function 
 void glutPrint(float x, float y, void* font, char* text, float r, float g, float b, float a) 
 { 
     if(!text || !strlen(text)) return; 
@@ -208,13 +207,20 @@ void WaveSolver::Render() {
     
     for(int i=0;i<Nr-1;i++) {
         for(int j=0;j<Nr-1;j++) {
-            glBegin(GL_TRIANGLES);
-        	r = (u_(i,j) > 0) ? u_(i,j)/max_value : 0;
-        	g = 1.0-abs(u_(i,j))/max_value;
-        	b = (u_(i,j) < 0) ? -u_(i,j)/max_value : 0;
-        	
-            glColor4f(r, g, b, 1.0);
             if(world(i,j)) glColor4f(1, 1, 1, 1.0);
+            else {
+	        	r = (u_(i,j) > 0) ? u_(i,j)/max_value : 0;
+	        	g = 1.0-abs(u_(i,j))/max_value;
+	        	b = (u_(i,j) < 0) ? -u_(i,j)/max_value : 0;
+	        	
+	            glColor4f(r, g, b, 1.0);
+	        }
+            
+            // The first triangle
+            // ***
+            // **
+            // *
+            glBegin(GL_TRIANGLES);
 
             glVertex3f( x(i)   ,  y(j)   , u_(i,j)   );
             glVertex3f( x(i+1) ,  y(j)   , u_(i+1,j) );
@@ -222,6 +228,10 @@ void WaveSolver::Render() {
 
             glEnd();
 
+            // The other triangle
+            //   *
+            //  **
+            // ***
             glBegin(GL_TRIANGLES);
 
             glVertex3f( x(i+1)   ,  y(j+1)   , u_(i+1,j+1)   );
@@ -244,7 +254,7 @@ void WaveSolver::Render() {
 
     sprintf(str,"dt                          = %.3f",dt);
     glutPrint(-3.675,4.8,glutFonts[5],str,1,1,1,1);
-    
+
     sprintf(str,"damping                 = %.3f",dampingFactor);
     glutPrint(-3.374,4.15,glutFonts[5],str,1,1,1,1);
 }
