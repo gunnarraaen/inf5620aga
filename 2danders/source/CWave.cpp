@@ -30,7 +30,11 @@ void CWave::Display (void) {
 
     ogl.setperspective(60);
     
-    ogl.camera = CVector(0.0,-2.0,1.3);
+    double x = 2*cos(var.solver.time);
+    double y = 2*sin(var.solver.time);
+
+    // ogl.camera = CVector(0.0,-2.0,1.3);
+    ogl.camera = CVector(x,y,1.3);
     
     ogl.ypr = CVector(0,0,90); // Rotate camera
 
@@ -65,4 +69,13 @@ void CWave::Events ()  {
         var.speed = 8;
     if (key=='9')
         var.speed = 9;
+    if (key=='g')
+        var.solver.render_ground = !var.solver.render_ground;
+    if (key=='w')
+        var.solver.render_wave = !var.solver.render_wave;
+    if (key=='a')
+        var.solver.render_wall = !var.solver.render_wall;
+
+    key = '0';
+
 }
