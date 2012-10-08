@@ -43,8 +43,6 @@ void CApplication::InternalKeyboard (unsigned char k, int  x, int y) {
 
     //    key = 0;
 
-    cout << key << endl;
-
 }
 
 void CApplication::InternalKeyboardUp (unsigned char k, int  x, int y)  {

@@ -91,6 +91,14 @@ class CIniFile  {
     throw string("Could not find any parameter '" + name +"'");
   }
 
+  int getint(string name) {
+    for (unsigned int i=0;i<items.size();i++) {
+      if (items[i].name==CUtil::trim(name))
+  return items[i].dval;
+    }
+    throw string("Could not find any parameter '" + name +"'");
+  }
+
   CVector getvector(string name) {
     CVector res(0,0,0);
     for (unsigned int i=0;i<items.size();i++) {

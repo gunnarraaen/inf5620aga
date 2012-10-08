@@ -1,9 +1,11 @@
 #pragma once
 
 class CWave;
+// class CIniFile;
 
 #include <Armadillo>
 #include <COpenGL.h>
+#include <CIniFile.h>
 using namespace arma;
 
 mat readBMP(char* filename);
@@ -28,7 +30,8 @@ public:
 	double max_value;
 	bool render_wall;
 
-	WaveSolver();
+	WaveSolver() {}
+	WaveSolver(CIniFile &ini);
 	void step();
 	void Render();
 	void RenderWall(int i,int j);

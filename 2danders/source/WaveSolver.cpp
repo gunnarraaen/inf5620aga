@@ -1,5 +1,6 @@
 #include <WaveSolver.h>
 #include <CWave.h>
+#include <CIniFile.h>
 
 // Mods the index on system size
 inline int WaveSolver::idx(int i) {
@@ -31,20 +32,15 @@ inline double WaveSolver::calcC(int i, int j) {
 	return H(i,j);
 }
 
-WaveSolver::WaveSolver() {
-	render_wall = false;
-	Nr = 200;
-	dampingFactor = 0;
-	max_value = 0;
-	char *file = new char[50];
-	sprintf(file,"vel.bmp");
-
-	H = readBMP(file);
-
-	sprintf(file,"wall.bmp");
+WaveSolver::WaveSolver(CIniFile &ini) {
+	render_wall = ini.getbool("render_wall");
+	Nr = ini.getint("grid_size");
+	dampingFactor = ini.getdouble("damping");
 	
-	world = readBMP(file);
+	H = readBMP((char*)ini.getstring("velocity_file").c_str());	
+	world = readBMP((char*)ini.getstring("wall_file").c_str());	
 
+	max_value = 0;
 	r_min = -1.0;
 	r_max = 1.0;               			// Square grid
 	time = 0;
@@ -67,9 +63,9 @@ WaveSolver::WaveSolver() {
 	double _x,_y; // Temp variables for speed'n read
 
 	// Calculate initial conditions
-	double x0 = 0;
-	double y0 = -0.7;
-	double stddev = 0.0005;	
+	double x0 = ini.getdouble("x0");
+	double y0 = ini.getdouble("y0");
+	double stddev = ini.getdouble("stddev");
 
 	for(int i=0;i<Nr;i++) {
 		x(i) = r_min+i*dr;
@@ -79,12 +75,17 @@ WaveSolver::WaveSolver() {
 			_x = x(i)-x0; 					// The x- and y-center can have an offset
 			_y = y(j)-y0;
 
-			u_prev(i,j) = 0.2*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
-			u_(i,j)  = 0.2*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev));
+			u_prev(i,j) = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev*stddev));
+			u_(i,j)     = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev*stddev));
 			max_value = max(max_value,abs(u_(i,j)));
 		}
 	}
-	
+
+	// Normalize these to the amplitude we have chosen in ini
+	double amplitude = ini.getdouble("amplitude");
+	u_prev *= amplitude/max_value;
+	u_ *= amplitude/max_value;
+	max_value = amplitude;
 }
 
 void WaveSolver::step() {
@@ -216,6 +217,8 @@ void WaveSolver::Render() {
 	            glColor4f(r, g, b, 1.0);
 	        }
             
+
+
             // The first triangle
             // ***
             // **
@@ -255,8 +258,11 @@ void WaveSolver::Render() {
     sprintf(str,"dt                          = %.3f",dt);
     glutPrint(-3.675,4.8,glutFonts[5],str,1,1,1,1);
 
+    sprintf(str,"Grid size                = %d",Nr);
+    glutPrint(-3.370,4.15,glutFonts[5],str,1,1,1,1);
+
     sprintf(str,"damping                 = %.3f",dampingFactor);
-    glutPrint(-3.374,4.15,glutFonts[5],str,1,1,1,1);
+    glutPrint(-3.13,3.65,glutFonts[5],str,1,1,1,1);
 }
 
 mat readBMP(char* filename)

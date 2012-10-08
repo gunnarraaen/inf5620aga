@@ -15,7 +15,7 @@ void CWave::Update(void) {
 }  
 
 void CWave::Initialize_() {
-    var.solver = WaveSolver();
+    var.solver = WaveSolver(ini);
     var.time = 0;
     var.speed = 3;
 
