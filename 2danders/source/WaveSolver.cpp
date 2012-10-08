@@ -107,8 +107,9 @@ void WaveSolver::step() {
 			double ddx = cx_p*( u(i,j,1) - u(i,j) ) - cx_m*( u(i,j) - u(i,j,-1) );
 			double ddy = cy_p*( u(i,j,0,1) - u(i,j) ) - cy_m*( u(i,j) - u(i,j,0,-1) );
 			double ddt_rest = -(1-0.5*dampingFactor*dt)*uprev(i,j) + 2*u(i,j);
+			double source = 0;
 
-			u_next(i,j) = world(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest);
+			u_next(i,j) = world(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
 			max_value = max(max_value,abs(u_next(i,j)));
 		}
 	}
