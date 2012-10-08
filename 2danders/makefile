@@ -24,7 +24,7 @@ FFLAGS = -lglew  -framework GLUT -framework OpenGL, -framework Carbon -lm -lCiRI
 
 PROJECT = main
 
-_obj 	=  main.o CWave.o CPoint.o CPoints.o WaveSolver.o
+_obj 	=  main.o CWave.o CPoint.o CPoints.o WaveSolver.o CWaveShader.o AObject.o
 
 
 obj = $(patsubst %,$(SOURCEDIR)/%,$(_obj))

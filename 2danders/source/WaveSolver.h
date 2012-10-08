@@ -6,6 +6,8 @@ class CWave;
 #include <Armadillo>
 #include <COpenGL.h>
 #include <CIniFile.h>
+#include <AObject.h>
+
 using namespace arma;
 
 mat readBMP(char* filename);
@@ -35,10 +37,14 @@ public:
 	WaveSolver() {}
 	WaveSolver(CIniFile &ini);
 	void step();
+	
 	void Render();
 	void RenderWave(int i,int j);
 	void RenderGround(int i,int j);
 	void RenderWall(int i, int j, int di,int dj);
+
+	void copyToGrid(AObject& grid);
+
 
 	double u(int i,int j, int di=0, int dj=0);
 	double uprev(int i,int j, int di=0, int dj=0);
