@@ -35,6 +35,7 @@ void CWave::renderWave() {
 
     var.solver.copyToGrid(var.waveGrid);
     var.waveGrid.calculateGridFaceNormals();
+    var.waveGrid.calculateGridVertexNormals();
 
     float A = 5;
     float B = 2;

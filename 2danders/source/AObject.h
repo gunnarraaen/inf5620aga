@@ -5,9 +5,14 @@
 using namespace std;
 using namespace arma;
 
+class AFace;
+
 class AVertex {
 public:
 	CVector pos,normal,color;
+	vector<int> faces;
+
+	void calculateNormal(vector<AFace> &faceList);
 };
 
 class AFace {
@@ -32,7 +37,7 @@ public:
 
 	int       		gridSize;
 	bool			hasNormals, hasColors;
-
+	mat             vertexFaceList;
 
 	void InitializeGrid(int _gridSize,double _realSize);
 	void copyGridFromBMP(mat);

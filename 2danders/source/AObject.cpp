@@ -20,7 +20,6 @@ void AObject::InitializeGrid(int _gridSize,double _realSize) {
 		}
 	}
 
-
 	int face = 0;
 	for (int i=0;i<(N-1);i++) {
 		for (int j=0;j<(N-1);j++) {
@@ -29,12 +28,19 @@ void AObject::InitializeGrid(int _gridSize,double _realSize) {
 			faces[face].face[0] = c;
 			faces[face].face[1] = c+1;
 			faces[face].face[2] = c+N+1;
-
+			
+			vertices[c].faces.push_back(face);
+			vertices[c+1].faces.push_back(face);
+			vertices[c+N+1].faces.push_back(face);
+			
 			face++;
 
 			faces[face].face[0] = c;
 			faces[face].face[1] = c+N+1;
 			faces[face].face[2] = c+N;
+			vertices[c].faces.push_back(face);
+			vertices[c+N+1].faces.push_back(face);
+			vertices[c+N].faces.push_back(face);
 
 			face++;
 
@@ -46,17 +52,22 @@ void AObject::InitializeGrid(int _gridSize,double _realSize) {
 
 }
 
+void AVertex::calculateNormal(vector<AFace>& faceList) {
+	normal.Set(0,0,0);
+	
+	int size=faces.size();
 
+	for(int i=0;i<size;i++) {
+		normal = normal + faceList[faces[i]].normal;
+	}
+
+	normal = normal / ((size>0) ? size : 1);
+}
 
 void AObject::calculateGridVertexNormals() {
-
-/*	int N = gridSize;
-	for (int i=0;i<N;i++) {
-		for (int j=0;j<N;j++) {
-
-		}
-	}
-*/
+	int N = gridSize;
+	for(int i=0;i<N*N;i++) 
+		vertices[i].calculateNormal(faces);
 }
 
 
@@ -64,7 +75,6 @@ void AObject::calculateGridVertexNormals() {
 void AObject::calculateGridFaceNormals() {
 	for (int i=0;i<faces.size();i++)
 		faces[i].calculateNormal(vertices);
-
 }
 
 
@@ -75,11 +85,12 @@ void AObject::RenderTriangles() {
 	glBegin(GL_TRIANGLES);
 	for (int i=0;i<faces.size();i++) {
 
-		glNormal3f( faces[i].normal.x, faces[i].normal.y, faces[i].normal.z);		
+		
 		for (int j=0;j<3;j++) {
 			AVertex *v = &vertices[ faces [i].face[j]];
-
+			glNormal3f( v->normal.x, v->normal.y, v->normal.z);
 			glVertex3f( v->pos.x, v->pos.y, v->pos.z);
+			
 /*			if (hasColors) glColor3f( v->color.x, v->color.y, v->color.z);		
 			if (hasNormals) glNormal3f( v->normal.x, v->normal.y, v->normal.z);	*/	
 		}
@@ -96,6 +107,7 @@ void AObject::copyGridFromBMP(mat bmp) {
 	}
 
 	calculateGridFaceNormals();
+	calculateGridVertexNormals();
 }
 
 
