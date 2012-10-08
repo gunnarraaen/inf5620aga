@@ -114,10 +114,10 @@ def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
         0.5*Cy2*(u_1[1:-1,:-2] - 2*u_1[1:-1,1:-1] + u_1[1:-1,2:]) +\
         0.5*dt2*f_a[1:-1,1:-1]
         # Boundary condition u=0
-        u[: ,0] = 0
-        u[:,Ny] = 0
-        u[0 ,:] = 0
-        u[Nx,:] = 0
+        u[: ,0] = u[:,1]
+        u[:,Ny] = u[:,Ny-1]
+        u[0 ,:] = u[1,:]
+        u[Nx,:] = u[Nx-1,:]
 
     if user_action is not None:
         user_action(u, x, xv, y, yv, t, 1)
@@ -175,10 +175,10 @@ def advance_vectorized(u, u_1, u_2, f_a, x, y, t, Cx2, Cy2, dt2):
          dt2*f_a[1:-1,1:-1]
     # Boundary condition u=0
     Nx = u.shape[0]-1;  Ny = u.shape[1]-1
-    u[: ,0] = 0
-    u[:,Ny] = 0
-    u[0 ,:] = 0
-    u[Nx,:] = 0
+    u[: ,0] = u[:,1]
+    u[:,Ny] = u[:,Ny-1]
+    u[0 ,:] = u[1,:]
+    u[Nx,:] = u[Nx-1,:]
     return u
 
     import nose.tools as nt
@@ -255,7 +255,7 @@ def run_Gaussian(plot_method=1, version='vectorized'):
 
     def I(x, y):
         """Gaussian peak at (Lx/2, Ly/2)."""
-        return exp(-0.5*(x-Lx/2.0)**2 - 0.5*(y-Ly/2.0)**2)
+        return 3*exp(-0.5*(x-Lx/2.0)**2 - 0.5*(y-Ly/2.0)**2)
         
 
     Nx = 40; Ny = 40; T = 20
