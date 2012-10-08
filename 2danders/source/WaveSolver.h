@@ -15,8 +15,8 @@ mat readBMP(char* filename);
 class WaveSolver {
 public:
 	int Nr;
-	mat H;
-	mat world;
+	mat ground;
+	mat walls;
 	mat u_next;
 	mat u_;
 	mat u_prev;
@@ -30,22 +30,12 @@ public:
 	double r_min;
 	double r_max;
 	double max_value;
-	bool   render_wall;
-	bool   render_ground;
-	bool   render_wave;
-
+	
 	WaveSolver() {}
 	WaveSolver(CIniFile &ini);
 	void step();
 	
-	void Render();
-	void RenderWave(int i,int j);
-	void RenderGround(int i,int j);
-	void RenderWall(int i, int j, int di,int dj);
-
 	void copyToGrid(AObject& grid);
-
-
 	double u(int i,int j, int di=0, int dj=0);
 	double uprev(int i,int j, int di=0, int dj=0);
 	double calcC(int i, int j);

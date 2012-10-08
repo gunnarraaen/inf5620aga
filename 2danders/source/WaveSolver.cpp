@@ -9,7 +9,7 @@ inline int WaveSolver::idx(int i) {
 
 // Calculates the value of u_(i+di,j+dj) but takes care of the boundary conditions and world
 inline double WaveSolver::u(int i,int j, int di, int dj) {
-	if(world(idx(i+di),idx(j+dj))) {
+	if(walls(idx(i+di),idx(j+dj))) {
 		return u_(idx(i-di),idx(j-dj));
 	} 
 
@@ -18,7 +18,7 @@ inline double WaveSolver::u(int i,int j, int di, int dj) {
 
 // Calculates the value of u_prev(i+di,j+dj) but takes care of the boundary conditions and world
 inline double WaveSolver::uprev(int i,int j, int di, int dj) {
-	if(world(idx(i+di),idx(j+dj))) {
+	if(walls(idx(i+di),idx(j+dj))) {
 		return u_prev(idx(i-di),idx(j-dj));
 	} 
 
@@ -29,7 +29,7 @@ inline double WaveSolver::uprev(int i,int j, int di, int dj) {
 inline double WaveSolver::calcC(int i, int j) {
 	i=(i+10*Nr)%Nr;
 	j=(j+10*Nr)%Nr;
-	return H(i,j);
+	return min(ground(i,j),1.0);
 }
 
 
@@ -43,23 +43,23 @@ void WaveSolver::copyToGrid(AObject& grid) {
 
 
 WaveSolver::WaveSolver(CIniFile &ini) {
-	render_wall = ini.getbool("render_wall");
 	Nr = ini.getint("grid_size");
 	dampingFactor = ini.getdouble("damping");
+	walls = zeros<mat>(Nr,Nr);
+	ground = readBMP((char*)ini.getstring("velocity_file").c_str());	
+	for(int i=0;i<Nr;i++) {
+		for(int j=0;j<Nr;j++) {
+			walls(i,j) = ground(i,j) >= 1.0;
+		}
+	}
 	
-	H = readBMP((char*)ini.getstring("velocity_file").c_str());	
-	world = readBMP((char*)ini.getstring("wall_file").c_str());	
-	
-	render_ground = false;
-	render_wave = true;
-
 	max_value = 0;
 	r_min = -1.0;
 	r_max = 1.0;               			// Square grid
 	time = 0;
 
 	dr = (r_max-r_min)/(Nr-1);		 	// Step length in space
-	double c_max = H.max();           		// Used to determine dt and Nt
+	double c_max = 1.0;       		// Used to determine dt and Nt
 
 	double k = 0.5;               		// We require k<=0.5 for stability
 	dt = dr/sqrt(2*c_max); 				// This guarantees (I guess) stability if c_max is correct
@@ -99,14 +99,11 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	u_prev *= amplitude/max_value;
 	u_ *= amplitude/max_value;
 	max_value = amplitude;
-
 }
 
 void WaveSolver::step() {
 	time += dt;
 	
-	max_value = 0;
-
 	double cx_m, cx_p,cy_m, cy_p, c; 		// Temp variables for speed'n read
 	double factor = 1.0/(1+0.5*dampingFactor*dt);
 	for(int i=0;i<Nr;i++) {
@@ -123,224 +120,12 @@ void WaveSolver::step() {
 			double ddt_rest = -(1-0.5*dampingFactor*dt)*uprev(i,j) + 2*u(i,j);
 			double source = 0;
 
-			u_next(i,j) = world(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
-			max_value = max(max_value,abs(u_next(i,j)));
+			u_next(i,j) = walls(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
 		}
 	}
 
 	u_prev = u_;
 	u_ = u_next;
-}
-
-
-// Fonts
-void* glutFonts[7] = { 
-    GLUT_BITMAP_9_BY_15, 
-    GLUT_BITMAP_8_BY_13, 
-    GLUT_BITMAP_TIMES_ROMAN_10, 
-    GLUT_BITMAP_TIMES_ROMAN_24, 
-    GLUT_BITMAP_HELVETICA_10, 
-    GLUT_BITMAP_HELVETICA_12, 
-    GLUT_BITMAP_HELVETICA_18 
-}; 
-
-void glutPrint(float x, float y, void* font, char* text, float r, float g, float b, float a) 
-{ 
-    if(!text || !strlen(text)) return; 
-    bool blending = false; 
-    if(glIsEnabled(GL_BLEND)) blending = true; 
-    glEnable(GL_BLEND); 
-    glColor4f(r,g,b,a); 
-    glRasterPos2f(x,y); 
-    while (*text) { 
-        glutBitmapCharacter(font, *text); 
-        text++; 
-    } 
-    if(!blending) glDisable(GL_BLEND); 
-}
-
-void WaveSolver::RenderWall(int i,int j, int di, int dj) {
-	glEnable(GL_BLEND);
-	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-
-
-	double z_top = 0.2;
-	double z_bot = -0.4*H.max();
-
-	glColor4f(1, 1, 1, 0.1);
-
-	glBegin(GL_POLYGON);
-	// glNormal3f(0,0,1);
-	glVertex3f( x(0)      ,  y(0)    , z_bot );
-	glVertex3f( x(Nr-1)   ,  y(0)    , z_bot );
-	glVertex3f( x(Nr-1)   ,  y(0)    , z_top );
-	glVertex3f( x(0)      ,  y(0)    , z_top );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	// glNormal3f(0,0,1);
-	glVertex3f( x(0)      ,  y(0)       , z_bot );
-	glVertex3f( x(0)      ,  y(Nr-1)    , z_bot );
-	glVertex3f( x(0)      ,  y(Nr-1)    , z_top );
-	glVertex3f( x(0)      ,  y(0)       , z_top );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	// glNormal3f(0,0,1);
-	glVertex3f( x(0)      ,  y(Nr-1)    , z_bot );
-	glVertex3f( x(Nr-1)   ,  y(Nr-1)    , z_bot );
-	glVertex3f( x(Nr-1)   ,  y(Nr-1)    , z_top );
-	glVertex3f( x(0)      ,  y(Nr-1)    , z_top );
-	glEnd();
-
-	glBegin(GL_POLYGON);
-	// glNormal3f(0,0,1);
-	glVertex3f( x(Nr-1)      ,  y(Nr-1)    , z_bot );
-	glVertex3f( x(Nr-1)      ,  y(0)       , z_bot );
-	glVertex3f( x(Nr-1)      ,  y(0)       , z_top );
-	glVertex3f( x(Nr-1)      ,  y(Nr-1)    , z_top );
-	glEnd();
-
-	glDisable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-}
-
-inline void WaveSolver::RenderWave(int i,int j) {
-	double r,g,b;
-	
-	if(world(i,j)) glColor4f(1, 1, 1, 1.0);
-    else {
-    	r = u_(i,j)/max_value;
-    	g = 1 - abs(u_(i,j)/max_value);
-    	b = -u(i,j)/max_value;
-
-    	
-        glColor4f(r, g, b, 0.7);
-    }
-
-    double A = 3.0;
-    
-    // The first triangle
-    // ***
-    // **
-    // *
-
-    CVector p1(x(i)    ,  y(j)   , A*u_(i,j));
-    CVector p2( x(i+1) ,  y(j)   , A*u_(i+1,j) );
-    CVector p3( x(i)   ,  y(j+1) , A*u_(i,j+1) );
-    CVector normal = (p2-p3).Cross(p1-p3).Normalize();
-    
-
-    glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f( x(i)   ,  y(j)   , A*u_(i,j)   );
-    glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f( x(i+1) ,  y(j)   , A*u_(i+1,j) );
-    glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f( x(i)   ,  y(j+1) , A*u_(i,j+1) );
-
-
-    // The other triangle
-    //   *
-    //  **
-    // ***
-
-    p1 = CVector( x(i+1)   ,  y(j)   , A*u_(i+1,j) );
-    p2 = CVector(  x(i+1)   ,  y(j+1)   , A*u_(i+1,j+1) );
-    p3 = CVector( x(i)     ,  y(j+1)   , A*u_(i,j+1) );
-
-    normal = (p2-p3).Cross(p1-p3).Normalize();
-
-    glNormal3f(normal.x, normal.y, normal.z);
-
-    glVertex3f( x(i+1)   ,  y(j)     , A*u_(i+1,j)   );
-    glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f( x(i+1)   ,  y(j+1)   , A*u_(i+1,j+1) );
-    glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f( x(i)     ,  y(j+1)   , A*u_(i,j+1) );
-
-}
-
-inline void WaveSolver::RenderGround(int i,int j) {
-	double color = 0.3-0.2*H(i,j);
-    glColor4f(color, color, color, 1.0);
-
-    glBegin(GL_TRIANGLES);
-
-    glVertex3f( x(i)   ,  y(j)   , -0.4*H(i,j)   );
-    glVertex3f( x(i+1) ,  y(j)   , -0.4*H(i+1,j) );
-    glVertex3f( x(i)   ,  y(j+1) , -0.4*H(i,j+1) );
-
-    glEnd();
-
-    glBegin(GL_TRIANGLES);
-
-    glVertex3f( x(i+1)   ,  y(j+1)   , -0.4*H(i+1,j+1)   );
-    glVertex3f( x(i+1)   ,  y(j)     , -0.4*H(i+1,j) );
-    glVertex3f( x(i)     ,  y(j+1)   , -0.4*H(i,j+1) );
-
-    glEnd();
-}
-
-// Divide each square (i,j), (i+1,j), (i,j+1), (i+1,j+1) into two triangles and draw them
-void WaveSolver::Render() {
-	glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-
-
-
-    glBegin(GL_TRIANGLES);
-    for(int i=0;i<Nr-1;i++) {
-        for(int j=0;j<Nr-1;j++) {
-        	if(render_wave) RenderWave(i,j);
-        }
-    }
-    glEnd();
-
-
-    //glDisable(GL_BLEND);
-    //glutSolidSphere(0.5, 16,16);
-
-//    waveShader.End();
-
-    glBegin(GL_TRIANGLES);
-    for(int i=0;i<Nr-1;i++) {
-        for(int j=0;j<Nr-1;j++) {
-			if(render_ground) RenderGround(i,j);
-        }
-    }
-    glEnd();
-
-
-
-
-    if(render_wall) {
-    	RenderWall(0,0,Nr-1,1);
-    	RenderWall(0,0,1,Nr-1);
-    	RenderWall(Nr-1,0,-1,Nr-1);
-    	RenderWall(0,Nr-1,Nr-1,-1);
-    }
-
-    glDisable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    
-    char *str = new char[50];
-    sprintf(str,"Maximum amplitude = %.3f",max_value);
-    glutPrint(-4.0,5.5,glutFonts[5],str,1,1,1,1);
-
-    sprintf(str,"dt                          = %.3f",dt);
-    glutPrint(-3.675,4.8,glutFonts[5],str,1,1,1,1);
-
-    sprintf(str,"Grid size                = %d",Nr);
-    glutPrint(-3.370,4.15,glutFonts[5],str,1,1,1,1);
-
-    sprintf(str,"damping                 = %.3f",dampingFactor);
-    glutPrint(-3.13,3.65,glutFonts[5],str,1,1,1,1);
 }
 
 mat readBMP(char* filename)
@@ -377,7 +162,7 @@ mat readBMP(char* filename)
 		int g = data[pixelIndex+1];
 		int b = data[pixelIndex];
 
-		double avg = (r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
+		double avg = 2*(r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
 		img(col,row) = avg;
 
 		pixelCount++;

@@ -16,13 +16,15 @@ void CWave::Update(void) {
 
 void CWave::Initialize_() {
     var.solver = WaveSolver(ini);
-    var.time = 0;
     var.speed = 3;  
+    var.theta = 3*M_PI/2;
     var.waveGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     var.groundGrid.InitializeGrid(ini.getint("grid_size"),2.0);
-    var.groundGrid.copyGridFromBMP(var.solver.H);
-    var.groundGrid.pos.z = -0.5;
-
+    var.groundGrid.copyGridFromBMP(var.solver.ground);
+    var.groundGrid.pos.z = -1;
+    var.render_ground = true;
+    var.render_wall = true;
+    var.render_wave = true;
 
     var.waveShader.Initialize("waveShader");
     var.groundShader.Initialize("groundShader");
@@ -30,6 +32,62 @@ void CWave::Initialize_() {
     Initialized = true;
 }  
 
+void CWave::RenderWall(int i,int j, int di, int dj) {
+    vec &x = var.solver.x;
+    vec &y = var.solver.x;
+    int Nr = var.solver.Nr;
+
+    double z_top = 0.05;
+    double z_bot = -1.0;
+
+    glColor4f(0.05, 0.05, 0.05, 1.0);
+
+    glBegin(GL_POLYGON);
+    
+    glVertex3f( x(0)      ,  y(0)    , z_bot );
+    glVertex3f( x(Nr-1)   ,  y(0)    , z_bot );
+    glVertex3f( x(Nr-1)   ,  y(0)    , z_top );
+    glVertex3f( x(0)      ,  y(0)    , z_top );
+    glEnd();
+
+    glBegin(GL_POLYGON);
+    
+    glVertex3f( x(0)      ,  y(0)       , z_bot );
+    glVertex3f( x(0)      ,  y(Nr-1)    , z_bot );
+    glVertex3f( x(0)      ,  y(Nr-1)    , z_top );
+    glVertex3f( x(0)      ,  y(0)       , z_top );
+    glEnd();
+
+    glBegin(GL_POLYGON);
+    
+    glVertex3f( x(0)      ,  y(Nr-1)    , z_bot );
+    glVertex3f( x(Nr-1)   ,  y(Nr-1)    , z_bot );
+    glVertex3f( x(Nr-1)   ,  y(Nr-1)    , z_top );
+    glVertex3f( x(0)      ,  y(Nr-1)    , z_top );
+    glEnd();
+
+    glBegin(GL_POLYGON);
+    
+    glVertex3f( x(Nr-1)      ,  y(Nr-1)    , z_bot );
+    glVertex3f( x(Nr-1)      ,  y(0)       , z_bot );
+    glVertex3f( x(Nr-1)      ,  y(0)       , z_top );
+    glVertex3f( x(Nr-1)      ,  y(Nr-1)    , z_top );
+    
+    glEnd();
+}
+
+void CWave::renderWalls() {
+    glDisable(GL_BLEND);
+    
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+
+    int Nr = var.solver.Nr;
+    RenderWall(0,0,Nr-1,1);
+    RenderWall(0,0,1,Nr-1);
+    RenderWall(Nr-1,0,-1,Nr-1);
+    RenderWall(0,Nr-1,Nr-1,-1);
+}
 
 void CWave::renderWave() {
 
@@ -40,7 +98,8 @@ void CWave::renderWave() {
     float A = 5;
     float B = 2;
 
-    var.waveShader.lightpos.Set(A*cos(var.solver.time*B),A*sin(var.solver.time*B),1);
+    // var.waveShader.lightpos.Set(A*cos(var.solver.time*B),A*sin(var.solver.time*B),1);
+    var.waveShader.lightpos.Set(1,1,1);
     var.waveShader.Start();
 
     glColor4f(0,1,0,1);
@@ -71,11 +130,11 @@ void CWave::Display (void) {
 
     ogl.setperspective(60);
     
-    double x = 2*cos(var.solver.time);
-    double y = 2*sin(var.solver.time);
-
-     ogl.camera = CVector(0.0,-2.0,1.3);
-    //ogl.camera = CVector(x,y,1.3);
+    double x = 2*cos(var.theta);
+    double y = 2*sin(var.theta);
+    
+    // ogl.camera = CVector(0.0,-2.0,1.3);
+    ogl.camera = CVector(x,y,1.3);
     
     ogl.ypr = CVector(0,0,90); // Rotate camera
 
@@ -83,8 +142,10 @@ void CWave::Display (void) {
     ogl.setup_camera();
 
     // var.solver.Render();
-    renderGround();
-    renderWave();    
+    if(var.render_wall) renderWalls();
+    if(var.render_ground) renderGround();
+    if(var.render_wave) renderWave();
+    
     
     glutSwapBuffers(); 
     Events();
@@ -112,12 +173,16 @@ void CWave::Events ()  {
         var.speed = 8;
     if (key=='9')
         var.speed = 9;
-    if (key=='g')
-        var.solver.render_ground = !var.solver.render_ground;
+    if (key=='q')
+        var.render_ground = !var.render_ground;
     if (key=='w')
-        var.solver.render_wave = !var.solver.render_wave;
+        var.render_wave = !var.render_wave;
+    if (key=='e')
+        var.render_wall = !var.render_wall;
     if (key=='a')
-        var.solver.render_wall = !var.solver.render_wall;
+        var.theta -= 0.1;
+    if (key=='d')
+        var.theta += 0.1;
 
     key = '0';
 

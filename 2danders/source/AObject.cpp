@@ -49,7 +49,6 @@ void AObject::InitializeGrid(int _gridSize,double _realSize) {
 	}
 
 	calculateGridFaceNormals();
-
 }
 
 void AVertex::calculateNormal(vector<AFace>& faceList) {
@@ -70,8 +69,6 @@ void AObject::calculateGridVertexNormals() {
 		vertices[i].calculateNormal(faces);
 }
 
-
-
 void AObject::calculateGridFaceNormals() {
 	for (int i=0;i<faces.size();i++)
 		faces[i].calculateNormal(vertices);
@@ -90,7 +87,7 @@ void AObject::RenderTriangles() {
 			AVertex *v = &vertices[ faces [i].face[j]];
 			glNormal3f( v->normal.x, v->normal.y, v->normal.z);
 			glVertex3f( v->pos.x, v->pos.y, v->pos.z);
-			
+
 /*			if (hasColors) glColor3f( v->color.x, v->color.y, v->color.z);		
 			if (hasNormals) glNormal3f( v->normal.x, v->normal.y, v->normal.z);	*/	
 		}

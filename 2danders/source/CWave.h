@@ -14,10 +14,13 @@ public:
     WaveSolver solver;
     AObject    waveGrid;
     AObject    groundGrid;
-    double time;
     int speed;
+    double theta;
     CWaveShader waveShader;
     CGroundShader groundShader;
+    bool render_ground;
+    bool render_wall;
+    bool render_wave;
 
 };
 
@@ -40,5 +43,7 @@ public:
 private:    
     static void renderWave();
     static void renderGround();
+    static void renderWalls();
+    static void RenderWall(int i,int j, int di, int dj);
 
 };
