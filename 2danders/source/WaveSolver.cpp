@@ -34,6 +34,7 @@ inline double WaveSolver::calcC(int i, int j) {
 WaveSolver::WaveSolver() {
 	render_wall = false;
 	Nr = 200;
+	dampingFactor = 1;
 	max_value = 0;
 	char *file = new char[50];
 	sprintf(file,"vel.bmp");
@@ -64,19 +65,6 @@ WaveSolver::WaveSolver() {
 	u_prev = zeros<mat>(Nr,Nr); 		// U_{n+1}
 
 	double _x,_y; // Temp variables for speed'n read
-	
-
-	sprintf(file,"init.bmp");
-
-	/*
-	u_prev = 0.1*readBMP(file);
-	u_     = 0.1*readBMP(file);
-	
-	for(int i=0;i<Nr;i++) {
-		x(i) = r_min+i*dr;
-		y(i) = r_min+i*dr;
-	}
-	*/
 
 	// Calculate initial conditions
 	double x0 = 0;
@@ -101,9 +89,11 @@ WaveSolver::WaveSolver() {
 
 void WaveSolver::step() {
 	time += dt;
-	double cx_m, cx_p,cy_m, cy_p, c; 		// Temp variables for speed'n read
+	
 	max_value = 0;
 
+	double cx_m, cx_p,cy_m, cy_p, c; 		// Temp variables for speed'n read
+	double factor = 1.0/(1+0.5*dampingFactor*dt);
 	for(int i=0;i<Nr;i++) {
 		for(int j=0;j<Nr;j++) {
 			c = calcC(i,j);
@@ -115,10 +105,9 @@ void WaveSolver::step() {
 
 			double ddx = cx_p*( u(i,j,1) - u(i,j) ) - cx_m*( u(i,j) - u(i,j,-1) );
 			double ddy = cy_p*( u(i,j,0,1) - u(i,j) ) - cy_m*( u(i,j) - u(i,j,0,-1) );
-			double ddt_rest = - uprev(i,j) + 2*u(i,j);
-			double dt = 0;
+			double ddt_rest = -(1-0.5*dampingFactor*dt)*uprev(i,j) + 2*u(i,j);
 
-			u_next(i,j) = world(i,j) ? 0 : dtdt_drdr*(ddx + ddy) + ddt_rest + dt;
+			u_next(i,j) = world(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest);
 			max_value = max(max_value,abs(u_next(i,j)));
 		}
 	}
@@ -182,6 +171,33 @@ void WaveSolver::RenderWall(int i,int j) {
 	glEnd();
 }
 
+// Here are the fonts: 
+void* glutFonts[7] = { 
+    GLUT_BITMAP_9_BY_15, 
+    GLUT_BITMAP_8_BY_13, 
+    GLUT_BITMAP_TIMES_ROMAN_10, 
+    GLUT_BITMAP_TIMES_ROMAN_24, 
+    GLUT_BITMAP_HELVETICA_10, 
+    GLUT_BITMAP_HELVETICA_12, 
+    GLUT_BITMAP_HELVETICA_18 
+}; 
+
+// Here is the function 
+void glutPrint(float x, float y, void* font, char* text, float r, float g, float b, float a) 
+{ 
+    if(!text || !strlen(text)) return; 
+    bool blending = false; 
+    if(glIsEnabled(GL_BLEND)) blending = true; 
+    glEnable(GL_BLEND); 
+    glColor4f(r,g,b,a); 
+    glRasterPos2f(x,y); 
+    while (*text) { 
+        glutBitmapCharacter(font, *text); 
+        text++; 
+    } 
+    if(!blending) glDisable(GL_BLEND); 
+}
+
 // Divide each square (i,j), (i+1,j), (i,j+1), (i+1,j+1) into two triangles and draw them
 void WaveSolver::Render() {
 	glEnable(GL_BLEND);
@@ -221,6 +237,16 @@ void WaveSolver::Render() {
     glDisable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    
+    char *str = new char[50];
+    sprintf(str,"Maximum amplitude = %.3f",max_value);
+    glutPrint(-4.0,5.5,glutFonts[5],str,1,1,1,1);
+
+    sprintf(str,"dt                          = %.3f",dt);
+    glutPrint(-3.675,4.8,glutFonts[5],str,1,1,1,1);
+    
+    sprintf(str,"damping                 = %.3f",dampingFactor);
+    glutPrint(-3.374,4.15,glutFonts[5],str,1,1,1,1);
 }
 
 mat readBMP(char* filename)

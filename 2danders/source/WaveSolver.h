@@ -18,13 +18,13 @@ public:
 	mat u_prev;
 	vec x;
 	vec y;
+	double dampingFactor;
 	double time;
 	double dt;
 	double dr;
 	double dtdt_drdr;
 	double r_min;
 	double r_max;
-	// vec max_value;
 	double max_value;
 	bool render_wall;
 
