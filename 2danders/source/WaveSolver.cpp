@@ -46,7 +46,9 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	Nr = ini.getint("grid_size");
 	dampingFactor = ini.getdouble("damping");
 	walls = zeros<mat>(Nr,Nr);
-	ground = readBMP((char*)ini.getstring("velocity_file").c_str());	
+	ground = readBMP((char*)ini.getstring("ground_file").c_str());
+	ground += ini.getdouble("ground_z_increase");
+	ground *= ini.getdouble("ground_z_scale");;
 	for(int i=0;i<Nr;i++) {
 		for(int j=0;j<Nr;j++) {
 			walls(i,j) = ground(i,j) >= 1.0;
@@ -59,7 +61,7 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	time = 0;
 
 	dr = (r_max-r_min)/(Nr-1);		 	// Step length in space
-	double c_max = 1.0;       		// Used to determine dt and Nt
+	double c_max = 1.0;       			// Used to determine dt and Nt
 
 	double k = 0.5;               		// We require k<=0.5 for stability
 	dt = 0.9*dr/sqrt(2*c_max); 				// This guarantees (I guess) stability if c_max is correct
@@ -104,10 +106,14 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 void WaveSolver::step() {
 	time += dt;
 	
-	double cx_m, cx_p,cy_m, cy_p, c; 		// Temp variables for speed'n read
+	double cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest, source; 		// Temp variables for speed'n read
 	double factor = 1.0/(1+0.5*dampingFactor*dt);
-	for(int i=0;i<Nr;i++) {
-		for(int j=0;j<Nr;j++) {
+	int i,j;
+
+	#pragma omp parallel for private(cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest, source,i,j) num_threads(4)
+	for(i=0;i<Nr;i++) {
+		for(j=0;j<Nr;j++) {
+			
 			c = calcC(i,j);
 
 			cx_m = 0.5*(c+calcC(i-1,j)); 	// Calculate the 4 c's we need. We need c_{i \pm 1/2,j} and c_{i,j \pm 1/2}
@@ -115,12 +121,13 @@ void WaveSolver::step() {
 			cy_m = 0.5*(c+calcC(i,j-1));
 			cy_p = 0.5*(c+calcC(i,j+1));
 
-			double ddx = cx_p*( u(i,j,1,0)   - u(i,j) ) - cx_m*( u(i,j) - u(i,j,-1,0) );
-			double ddy = cy_p*( u(i,j,0,1)   - u(i,j) ) - cy_m*( u(i,j) - u(i,j,0,-1) );
-			double ddt_rest = -(1-0.5*dampingFactor*dt)*uprev(i,j) + 2*u(i,j);
-			double source = 0;
+			ddx = cx_p*( u(i,j,1,0)   - u(i,j) ) - cx_m*( u(i,j) - u(i,j,-1,0) );
+			ddy = cy_p*( u(i,j,0,1)   - u(i,j) ) - cy_m*( u(i,j) - u(i,j,0,-1) );
+			ddt_rest = -(1-0.5*dampingFactor*dt)*uprev(i,j) + 2*u(i,j);
+			source = 0;
 
 			u_next(i,j) = walls(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
+			
 		}
 	}
 
@@ -162,7 +169,7 @@ mat readBMP(char* filename)
 		int g = data[pixelIndex+1];
 		int b = data[pixelIndex];
 
-		double avg = 2*(r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
+		double avg = 1.0*(r+g+b)/3.0/255.0; // If we have black/white only, the average is 0 (black) to 255 (white)
 		img(col,row) = avg;
 
 		pixelCount++;

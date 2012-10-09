@@ -17,9 +17,9 @@ LIBDIR =  CiRIOBase/libs
 
 
 # compiler specific flags
-CFLAGS =  -O3 -D$(TARGET)
+CFLAGS =  -O3 -D$(TARGET) -fopenmp
 
-FFLAGS = -lglew  -framework GLUT -framework OpenGL, -framework Carbon -lm -lCiRIOBase -larmadillo
+FFLAGS = -lglew  -framework GLUT -framework OpenGL, -framework Carbon -lm -lCiRIOBase -larmadillo -fopenmp
 
 
 PROJECT = main

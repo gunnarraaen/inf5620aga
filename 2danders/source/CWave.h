@@ -16,7 +16,7 @@ public:
     AObject    groundGrid;
     int speed;
     double theta;
-    double zoom;
+    double cam_radius;;
     CWaveShader waveShader;
     CGroundShader groundShader;
     bool render_ground;

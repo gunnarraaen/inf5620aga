@@ -18,7 +18,7 @@ void CWave::Initialize_() {
     var.solver = WaveSolver(ini);
     var.speed = 2;
     var.theta = 3*M_PI/2;
-    var.zoom  = 1.0;
+    var.cam_radius  = 2.0;
     var.waveGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     var.groundGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     var.groundGrid.copyGridFromBMP(var.solver.ground);
@@ -129,12 +129,11 @@ void CWave::Display (void) {
 
     ogl.setperspective(60);
     
-    double x = 2*cos(var.theta);
-    double y = 2*sin(var.theta);
+    double x = var.cam_radius*cos(var.theta);
+    double y = var.cam_radius*sin(var.theta);
     
     // ogl.camera = CVector(0.0,-2.0,1.3);
     ogl.camera = CVector(x,y,1.3);
-    ogl.camera = ogl.camera * var.zoom;
     
     ogl.ypr = CVector(0,0,90); // Rotate camera
 
@@ -142,9 +141,9 @@ void CWave::Display (void) {
     ogl.setup_camera();
 
     // var.solver.Render();
-    if(var.render_wall) renderWalls();
+    if(var.render_wall)   renderWalls();
     if(var.render_ground) renderGround();
-    if(var.render_wave) renderWave();
+    if(var.render_wave)   renderWave();
     
     
     glutSwapBuffers(); 
@@ -164,15 +163,15 @@ void CWave::Events ()  {
     if (key=='4')
         var.speed = 4;
     if (key=='5')
-        var.speed = 5;
-    if (key=='6')
         var.speed = 6;
-    if (key=='7')
-        var.speed = 7;
-    if (key=='8')
+    if (key=='6')
         var.speed = 8;
+    if (key=='7')
+        var.speed = 14;
+    if (key=='8')
+        var.speed = 20;
     if (key=='9')
-        var.speed = 9;
+        var.speed = 30;
     if (key=='q')
         var.render_ground = !var.render_ground;
     if (key=='w')
@@ -184,9 +183,9 @@ void CWave::Events ()  {
     if (key=='d')
         var.theta += 0.05;
     if (key=='+')
-        var.zoom -= 0.05;
+        var.cam_radius -= 0.05;
     if (key=='-')
-        var.zoom += 0.05;
+        var.cam_radius += 0.05;
 
     key = '0';
 
