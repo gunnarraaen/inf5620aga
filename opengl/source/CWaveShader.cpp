@@ -77,7 +77,6 @@ CGroundShader::CGroundShader() {
 	"   gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
 	"}\n");
 
- 
   frag = string(
   	"uniform vec3 lightpos; \n"
 	"varying vec3 normal; \n"
@@ -85,7 +84,10 @@ CGroundShader::CGroundShader() {
 	"void main(void)\n"
 	"{\n "
 	"  vec4 val = vec4(0.7,0.5,0.3,1);"
-	"  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);"
+	"  if(myPos.z > 1.1) {"
+	"      val = vec4(10.0*(myPos.z-1.0),10.0*(myPos.z-1.0),10.0*(myPos.z-1.0),1.0);"
+	"  }                  "
+	"  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);"	
 	"  gl_FragColor = val*light; \n"
 	"  gl_FragColor.w = 1.0;"
 	"}\n");

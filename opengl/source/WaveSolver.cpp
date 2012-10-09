@@ -46,6 +46,9 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	Nr = ini.getint("grid_size");
 	dampingFactor = ini.getdouble("damping");
 	walls = zeros<mat>(Nr,Nr);
+
+	// Read in the ground info from bmp file
+	// The values can be adjusted and scaled in the wave.ini
 	ground = readBMP((char*)ini.getstring("ground_file").c_str());
 	ground += ini.getdouble("ground_z_increase");
 	ground *= ini.getdouble("ground_z_scale");;
@@ -71,13 +74,13 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	x  = zeros<vec>(Nr,1); 				// Positions to calculate initial conditions
 	y  = zeros<vec>(Nr,1);				
 
-	u_next = zeros<mat>(Nr,Nr);			// U_{n-1}
+	u_next = zeros<mat>(Nr,Nr);			// U_{n+1}
 	u_ = zeros<mat>(Nr,Nr);  			// U_{n}
-	u_prev = zeros<mat>(Nr,Nr); 		// U_{n+1}
+	u_prev = zeros<mat>(Nr,Nr); 		// U_{n-1}
 
 	double _x,_y; // Temp variables for speed'n read
 
-	// Calculate initial conditions
+	// Calculate initial conditions, gaussian at x0,y0
 	double x0 = ini.getdouble("x0");
 	double y0 = ini.getdouble("y0");
 	double stddev = ini.getdouble("stddev");
@@ -113,7 +116,6 @@ void WaveSolver::step() {
 	#pragma omp parallel for private(cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest, source,i,j) num_threads(4)
 	for(i=0;i<Nr;i++) {
 		for(j=0;j<Nr;j++) {
-			
 			c = calcC(i,j);
 
 			cx_m = 0.5*(c+calcC(i-1,j)); 	// Calculate the 4 c's we need. We need c_{i \pm 1/2,j} and c_{i,j \pm 1/2}
@@ -126,8 +128,8 @@ void WaveSolver::step() {
 			ddt_rest = -(1-0.5*dampingFactor*dt)*uprev(i,j) + 2*u(i,j);
 			source = 0;
 
+			// Set value to zero if we have a wall.
 			u_next(i,j) = walls(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
-			
 		}
 	}
 
