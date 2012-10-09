@@ -42,9 +42,8 @@
 
 \section*{Abstract}
 The two dimensional wave equation can be used to model many interesting problems such as electromagnetic waves and tsunami waves. We create a numerical solver based on an explicit scheme.
-
 \section*{Theory}
-A general wave equation with damping coefficient $b$ and speed 
+The general wave equation with damping coefficient $b$, propagation speed $c$ and source $f(x,y,t)$ is on the form
 \begin{align}
 \frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
 \frac{\partial}{\partial x}\left( q (x,y)
@@ -52,8 +51,19 @@ A general wave equation with damping coefficient $b$ and speed
 \frac{\partial}{\partial y}\left( q (x,y)
 \frac{\partial u}{\partial y}\right) + f(x,y,t),
 \end{align}
+or
+\begin{align}
+\frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
+\nabla \cdot \big(q(x,y) \nabla u \big )
+\end{align}
 
 \section*{Numerical implementation}
+\subsection*{Discretization}
+We use the standard approximation for the second derivative and the centered difference method for the first derivative in time, and a double centered difference in the position derivatives
+\begin{align*}
+\f{u^{n+1}_{i,j} + u^{n-1}_{i,j} - 2u^{n}_{i,j}}{\Delta t^2} + b\f{u^{n+1}_{i,j}-u^{n-1}_{i,j}}{2\Delta t}\\
+= \f{1}{\Delta x}\Bigg(
+\end{align*}
 
 \section*{Verification}
 \subsection*{Constant solution}

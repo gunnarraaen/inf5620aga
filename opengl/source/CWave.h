@@ -22,6 +22,7 @@ public:
     bool render_ground;
     bool render_wall;
     bool render_wave;
+    bool render_shader;
 
 };
 

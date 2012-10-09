@@ -41,6 +41,14 @@ void WaveSolver::copyToGrid(AObject& grid) {
 		}	
 }
 
+void WaveSolver::changeGroundZIncrease(double deltaZ) {
+	ground += deltaZ;
+	for(int i=0;i<Nr;i++) {
+		for(int j=0;j<Nr;j++) {
+			walls(i,j) = ground(i,j) >= 1.0;
+		}
+	}
+}
 
 WaveSolver::WaveSolver(CIniFile &ini) {
 	Nr = ini.getint("grid_size");
@@ -67,7 +75,7 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	double c_max = 1.0;       			// Used to determine dt and Nt
 
 	double k = 0.5;               		// We require k<=0.5 for stability
-	dt = 0.9*dr/sqrt(2*c_max); 				// This guarantees (I guess) stability if c_max is correct
+	dt = 0.9*dr/sqrt(2*c_max); 			// This guarantees (I guess) stability if c_max is correct
 	
 	dtdt_drdr = dt*dt/(dr*dr); 			// Constant that is used in the calculation
 	
@@ -129,6 +137,7 @@ void WaveSolver::step() {
 			source = 0;
 
 			// Set value to zero if we have a wall.
+			// u_next(i,j) = walls(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
 			u_next(i,j) = walls(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
 		}
 	}

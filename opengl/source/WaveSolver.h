@@ -34,7 +34,8 @@ public:
 	WaveSolver() {}
 	WaveSolver(CIniFile &ini);
 	void step();
-	
+	void changeGroundZIncrease(double delta_z);
+
 	void copyToGrid(AObject& grid);
 	double u(int i,int j, int di=0, int dj=0);
 	double uprev(int i,int j, int di=0, int dj=0);

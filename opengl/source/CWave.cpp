@@ -14,6 +14,35 @@ void CWave::Update(void) {
         var.solver.step();
 }  
 
+void CWave::Display (void) {
+    if (!Initialized)
+    return;
+
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); 
+
+    ogl.setperspective(60);
+    
+    double x = var.cam_radius*cos(var.theta);
+    double y = var.cam_radius*sin(var.theta);
+    
+    // ogl.camera = CVector(0.0,-2.0,1.3);
+    ogl.camera = CVector(x,y,1.3);
+    
+    ogl.ypr = CVector(0,0,90); // Rotate camera
+
+    ogl.target = CVector(0,0,0);
+    ogl.setup_camera();
+
+    // var.solver.Render();
+    if(var.render_wall)   renderWalls();
+    if(var.render_ground) renderGround();
+    if(var.render_wave)   renderWave();
+    
+    
+    glutSwapBuffers(); 
+    Events();
+}
+
 void CWave::Initialize_() {
     var.solver = WaveSolver(ini);
     var.speed = 2;
@@ -21,11 +50,14 @@ void CWave::Initialize_() {
     var.cam_radius  = 2.0;
     var.waveGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     var.groundGrid.InitializeGrid(ini.getint("grid_size"),2.0);
+    
     var.groundGrid.copyGridFromBMP(var.solver.ground);
     var.groundGrid.pos.z = -1;
+
     var.render_ground = true;
     var.render_wall = true;
     var.render_wave = true;
+    var.render_shader = true;
 
     var.waveShader.Initialize("waveShader");
     var.groundShader.Initialize("groundShader");
@@ -91,63 +123,37 @@ void CWave::renderWalls() {
 }
 
 void CWave::renderWave() {
-
     var.solver.copyToGrid(var.waveGrid);
-    var.waveGrid.calculateGridFaceNormals();
-    var.waveGrid.calculateGridVertexNormals();
+    if(var.render_shader) {
+        
+        var.waveGrid.calculateGridFaceNormals();
+        var.waveGrid.calculateGridVertexNormals();
 
-    double w = 0.5;
-    var.waveShader.lightpos.Set(2*cos(var.solver.time*w),2*sin(var.solver.time*w),1);
-    
-    var.waveShader.Start();
+        double w = 0.5;
+        var.waveShader.lightpos.Set(2*cos(var.solver.time*w),2*sin(var.solver.time*w),1);
+        
+        var.waveShader.Start();
+    }
 
     glColor4f(0,1,0,1);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     var.waveGrid.RenderTriangles();
 
-    var.waveShader.End();
+    if(var.render_shader) var.waveShader.End();
 }
 
 void CWave::renderGround() {
-
-    var.groundShader.lightpos  = var.waveShader.lightpos;
-    var.groundShader.Start();
-
+    if(var.render_shader) {
+        var.groundShader.lightpos  = var.waveShader.lightpos;
+        var.groundShader.Start();
+    }
+    
     glColor4f(0,1,0,1);
     glDisable(GL_BLEND);
     var.groundGrid.RenderTriangles();
-
-    var.groundShader.End();
-}
-
-void CWave::Display (void) {
-    if (!Initialized)
-    return;
-
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); 
-
-    ogl.setperspective(60);
-    
-    double x = var.cam_radius*cos(var.theta);
-    double y = var.cam_radius*sin(var.theta);
-    
-    // ogl.camera = CVector(0.0,-2.0,1.3);
-    ogl.camera = CVector(x,y,1.3);
-    
-    ogl.ypr = CVector(0,0,90); // Rotate camera
-
-    ogl.target = CVector(0,0,0);
-    ogl.setup_camera();
-
-    // var.solver.Render();
-    if(var.render_wall)   renderWalls();
-    if(var.render_ground) renderGround();
-    if(var.render_wave)   renderWave();
-    
-    
-    glutSwapBuffers(); 
-    Events();
+    if(var.render_shader)
+        var.groundShader.End();
 }
 
 void CWave::Events ()  {
@@ -182,10 +188,16 @@ void CWave::Events ()  {
         var.theta -= 0.05;
     if (key=='d')
         var.theta += 0.05;
-    if (key=='+')
-        var.cam_radius -= 0.05;
-    if (key=='-')
-        var.cam_radius += 0.05;
+    if (key=='+') {
+        var.solver.changeGroundZIncrease(0.01);
+        var.groundGrid.copyGridFromBMP(var.solver.ground);
+    }
+    if (key=='-') {
+        var.solver.changeGroundZIncrease(-0.01);
+        var.groundGrid.copyGridFromBMP(var.solver.ground);
+    }
+    if (key=='r')
+        var.render_shader = !var.render_shader;
 
     key = '0';
 
