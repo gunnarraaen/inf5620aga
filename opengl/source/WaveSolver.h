@@ -20,6 +20,8 @@ public:
 	mat u_next;
 	mat u_;
 	mat u_prev;
+	mat source;
+
 	vec x;
 	vec y;
 	double dampingFactor;
@@ -30,11 +32,13 @@ public:
 	double r_min;
 	double r_max;
 	double max_value;
+	double avg_u;
 	
 	WaveSolver() {}
 	WaveSolver(CIniFile &ini);
 	void step();
 	void changeGroundZIncrease(double delta_z);
+	void calculateWalls();
 
 	void copyToGrid(AObject& grid);
 	double u(int i,int j, int di=0, int dj=0);

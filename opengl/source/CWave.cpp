@@ -9,9 +9,15 @@ void CWave::Update(void) {
     glutPostRedisplay();
     InternalUpdate();
     Events();
-
-    for(int i=0;i<var.speed;i++) 
+    
+    for(int i=0;i<var.speed;i++)  {
+        if(var.raindrops_enabled) {
+            createRainDrops();
+            moveRainDrops();
+        }
+        
         var.solver.step();
+    }
 }  
 
 void CWave::Display (void) {
@@ -37,6 +43,7 @@ void CWave::Display (void) {
     if(var.render_wall)   renderWalls();
     if(var.render_ground) renderGround();
     if(var.render_wave)   renderWave();
+    if(var.raindrops_enabled) renderRainDrops();
     
     
     glutSwapBuffers(); 
@@ -49,6 +56,9 @@ void CWave::Initialize_() {
     var.theta = 3*M_PI/2;
     var.cam_radius  = 2.0;
     var.waveGrid.InitializeGrid(ini.getint("grid_size"),2.0);
+    
+    var.waveGrid.pos.z = var.solver.avg_u;
+
     var.groundGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     
     var.groundGrid.copyGridFromBMP(var.solver.ground);
@@ -58,12 +68,44 @@ void CWave::Initialize_() {
     var.render_wall = true;
     var.render_wave = true;
     var.render_shader = true;
+    var.raindrops_enabled = false;
 
     var.waveShader.Initialize("waveShader");
     var.groundShader.Initialize("groundShader");
 
     Initialized = true;
 }  
+
+void CWave::moveRainDrops() {
+    // for (iter = var.raindrops.begin(); iter != var.raindrops.end();) {
+    for(int i=0;i<var.raindrops.size();i++) {
+        var.raindrops[i].z -= 0.005;
+
+        if(var.raindrops[i].z <= var.solver.u_(var.raindrops[i].i,var.raindrops[i].j)) {
+            var.solver.source(var.raindrops[i].i,var.raindrops[i].j) = 0.005;
+            var.raindrops.erase(var.raindrops.begin()+i--);
+        }
+    }
+}
+
+void CWave::createRainDrops() {
+    for(int i=0;i<5;i++) {
+        double x = rand() % var.solver.Nr;
+        double y = rand() % var.solver.Nr;
+        double z = 0.5;
+        RainDrop drop(x,y,z);
+        var.raindrops.push_back(drop);
+    }
+}
+
+void CWave::renderRainDrops() {
+    glPointSize(3);
+    glColor4f(0.2, 0.255,0.5, 0.7);
+    glBegin(GL_POINTS);
+    for(int i=0; i<var.raindrops.size(); i++) 
+        var.raindrops[i].render(var.solver.x,var.solver.y);
+    glEnd();
+}
 
 void CWave::RenderWall(int i,int j, int di, int dj) {
     vec &x = var.solver.x;
@@ -124,6 +166,8 @@ void CWave::renderWalls() {
 
 void CWave::renderWave() {
     var.solver.copyToGrid(var.waveGrid);
+    var.waveGrid.pos.z = var.solver.avg_u;
+
     if(var.render_shader) {
         
         var.waveGrid.calculateGridFaceNormals();
@@ -138,6 +182,7 @@ void CWave::renderWave() {
     glColor4f(0,1,0,1);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     var.waveGrid.RenderTriangles();
 
     if(var.render_shader) var.waveShader.End();
@@ -184,6 +229,8 @@ void CWave::Events ()  {
         var.render_wave = !var.render_wave;
     if (key=='e')
         var.render_wall = !var.render_wall;
+    if (key=='r')
+        var.raindrops_enabled = !var.raindrops_enabled;
     if (key=='a')
         var.theta -= 0.05;
     if (key=='d')
@@ -196,8 +243,8 @@ void CWave::Events ()  {
         var.solver.changeGroundZIncrease(-0.01);
         var.groundGrid.copyGridFromBMP(var.solver.ground);
     }
-    if (key=='r')
-        var.render_shader = !var.render_shader;
+    // if (key=='r')
+        // var.render_shader = !var.render_shader;
 
     key = '0';
 

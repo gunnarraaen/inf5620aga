@@ -6,6 +6,7 @@
 #include <CPoints.h>
 #include <AObject.h>
 #include <CWaveShader.h>
+#include <RainDrop.h>
 
 using namespace std;
 
@@ -23,7 +24,8 @@ public:
     bool render_wall;
     bool render_wave;
     bool render_shader;
-
+    bool raindrops_enabled;
+    vector<RainDrop> raindrops;
 };
 
 class CWave : public CApplication {
@@ -47,5 +49,7 @@ private:
     static void renderGround();
     static void renderWalls();
     static void RenderWall(int i,int j, int di, int dj);
-
+    static void moveRainDrops();
+    static void createRainDrops();
+    static void renderRainDrops();
 };
