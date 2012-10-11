@@ -1,45 +1,16 @@
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <iomanip>
+#include <cmath>
+#include <boost/numeric/ublas/matrix.hpp>
 using namespace std;
-const double pi = 3.1415;
-double defsource(double x, double y)
-{
-    return 0;
-}
-void **matrix(int row, int col, int num_bytes)
-  {
-  int      i, num;
-  char     **pointer, *ptr;
-
-  pointer = new char* [row];
-  if(!pointer) {
-    cout << "Exception handling: Memory allocation failed";
-    cout << " for "<< row << "row addresses !" << endl;
-    return NULL;
-  }
-  i = (row * col * num_bytes)/sizeof(char);
-  pointer[0] = new char [i];
-  if(!pointer[0]) {
-    cout << "Exception handling: Memory allocation failed";
-    cout << " for address to " << i << " characters !" << endl;
-    return NULL;
-  }
-  ptr = pointer[0];
-  num = col * num_bytes;
-  for(i = 0; i < row; i++, ptr += num )   {
-    pointer[i] = ptr; 
-  }
-
-  return  (void **)pointer;
-
-}
-void free_matrix(void **matr)
-{
-	delete[] (char*) matr[0];
-	delete[] matr;
-}
-void print_matrix(int n, int m,double** matr, const char * file, int skip)
+using namespace boost::numeric::ublas;
+const double pi = acos(-1);
+// ----------------------------------
+// print matrix to file
+// ----------------------------------
+void print_matrix(int n, int m, matrix<double> *matr, const char * file, int skip)
 {
 	ofstream ofs(file);
 	for (int i=0;i<n;i++)
@@ -47,16 +18,19 @@ void print_matrix(int n, int m,double** matr, const char * file, int skip)
 		if (i % skip==0) {
         for (int j=0;j<m;j++) {
 			if (j %skip == 0)
-				ofs << matr[i][j] << " ";
+                ofs << (*matr)(i,j) << " ";
 		}
 		}
 		ofs << endl;
 	}
 	ofs.close();
 }
-std::string ZeroPadNumber(int num)
+// ----------------------------------
+// pad number with zeros
+// ----------------------------------
+std::string padnumber(int num,char pad)
 {
     std::ostringstream ss;
-    ss << std::setw(7) << std::setfill( '0' ) << num;
+    ss << std::setw(7) << std::setfill(pad) << num;
     return ss.str();
 }

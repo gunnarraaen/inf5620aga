@@ -49,7 +49,7 @@ void print_matrix(int n,double** matr, const char * file, int skip)
 	}
 	ofs.close();
 }
-std::string ZeroPadNumber(int num)
+std::string padnumber(int num)
 {
     std::ostringstream ss;
     ss << std::setw(7) << std::setfill( '0' ) << num;
