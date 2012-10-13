@@ -308,7 +308,7 @@ def run_Gaussian(plot_method=2, version='vectorized'):
 
 if __name__ == '__main__':
     import sys
-    run_Gaussian()
+    run_Gaussian(version='scalar')
     #from scitools.misc import function_UI
     #cmd = function_UI([test_quadratic, run_efficiency_tests,
     #                   run_Gaussian, ], sys.argv)

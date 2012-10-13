@@ -5,7 +5,7 @@
                         user_action=None, version='scalar',
                         dt_safety_factor=1)
 
-Solve the 2D wave equation u_tt = u_xx + u_yy + f(x,t) on (0,L) with
+Solve the 2D wave equation u_tt + u_t = u_xx + u_yy + f(x,t) on (0,L) with
 u=0 on the boundary and initial condition du/dt=0.
 
 Nx and Ny are the total number of mesh cells in the x and y
@@ -28,7 +28,7 @@ from scitools.std import *
 import numpy as np
 import os
 
-def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
+def solver(I, V, f, q, beta, Lx, Ly, Nx, Ny, dt, T,
            user_action=None, version='scalar',
            dt_safety_factor=1):
 
@@ -51,15 +51,17 @@ def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
     xv = x[:,newaxis]          # for vectorized function evaluations
     yv = y[newaxis,:]
 
-    stability_limit = (1/float(c))*(1/sqrt(1/dx**2 + 1/dy**2))
-    if dt <= 0:                # max time step?
+    stability_limit = (1./sqrt(np.max(abs(q(xv,yv))))*(1/sqrt(1/dx**2 + 1/dy**2)))
+
+    if dt <= 0:                 # max time step?
         dt = dt_safety_factor*stability_limit
     elif dt > stability_limit:
         print 'error: dt=%g exceeds the stability limit %g' % \
               (dt, stability_limit)
     N = int(round(T/float(dt)))
     t = linspace(0, N*dt, N+1)    # mesh points in time
-    Cx2 = (c*dt/dx)**2;  Cy2 = (c*dt/dy)**2    # help variables
+    
+    #Cx2 = (c*dt/dx)**2;  Cy2 = (c*dt/dy)**2    # help variables
     dt2 = dt**2
 
     # Allow f and V to be None or 0
@@ -94,30 +96,95 @@ def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
     if version == 'scalar':
         for i in range(1, Nx):
             for j in range(1, Ny):
+                Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+                Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
                 u[i,j] = u_1[i,j] + dt*V(x[i], y[j]) + \
-                0.5*Cx2*(u_1[i-1,j] - 2*u_1[i,j] + u_1[i+1,j]) + \
-                0.5*Cy2*(u_1[i,j-1] - 2*u_1[i,j] + u_1[i,j+1]) + \
+                0.5*(Cx2l*(u_1[i,j] - u_1[i-1,j]) - Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+                0.5*(Cy2l*(u_1[i,j] - u_1[i,j-1]) - Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
                 0.5*dt2*f(x[i], y[j], t[n])
+        
+        # Boundary condition du/dn = 0: we use on j = 0, a ghost point so that u[i,j-1] = u[i,j+1], and so on
+        # Looks messy! maybe some cleaning possible.
         j = 0
-        for i in range(0, Nx): u[i,j] = 0
+        for i in range(1, Nx):
+            Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+            Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+            u[i,j] = u_1[i,j] + dt*V(x[i], y[j]) + \
+            0.5*(-Cx2l*(u_1[i,j] - u_1[i-1,j]) + Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+            0.5*(-Cy2l*(u_1[i,j+1] - u_1[i,j]) + Cy2r*(u_1[i,j] - u_1[i,j+1])) + \
+            0.5*dt2*f(x[i], y[j], t[n])
         j = Ny
-        for i in range(0, Nx): u[i,j] = 0
+        for i in range(1, Nx):
+            Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+            Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+            u[i,j] = u_1[i,j] + dt*V(x[i], y[j]) + \
+            0.5*(-Cx2l*(u_1[i,j] - u_1[i-1,j]) + Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+            0.5*(-Cy2l*(u_1[i,j-1] - u_1[i,j]) + Cy2r*(u_1[i,j] - u_1[i,j-1])) + \
+            0.5*dt2*f(x[i], y[j], t[n])           
         i = 0
-        for j in range(0, Ny): u[i,j] = 0
+        for j in range(1, Ny):
+            Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+            Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+            u[i,j] = u_1[i,j] + dt*V(x[i], y[j]) + \
+            0.5*(-Cx2l*(u_1[i,j] - u_1[i+1,j]) + Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+            0.5*(-Cy2l*(u_1[i,j] - u_1[i,j-1]) + Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
+            0.5*dt2*f(x[i], y[j], t[n])
         i = Nx
-        for j in range(0, Ny): u[i,j] = 0
+        for j in range(1, Ny):
+            Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+            Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+            u[i,j] = u_1[i,j] + dt*V(x[i], y[j]) + \
+            0.5*(-Cx2l*(u_1[i,j] - u_1[i-1,j]) + Cx2r*(u_1[i-1,j] - u_1[i,j])) + \
+            0.5*(-Cy2l*(u_1[i,j] - u_1[i,j-1]) + Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
+            0.5*dt2*f(x[i], y[j], t[n])
+
+        # corner points:
+        u[0,0] = u[1,1]; u[Nx,0] = u[Nx-1,1]; u[Nx, Ny] = u[Nx-1,Ny-1]; u[0,Ny] = u[1,Ny-1];
+
     else:  # use vectorized version
-        f_a[:,:] = f(xv, yv, t[n])  # precompute, size as u
+        f_a[:,:] = f(xv, yv, t[n])               # precompute, size as u
+        qv = q(xv+dx/2., yv+dy/2.)               # precompute, size as u
         V_a = V(xv, yv)
+        Cx2 = qv[:,:]*(dt/dx)**2
+        Cy2 = qv[:,:]*(dt/dy)**2
         u[1:-1,1:-1] = u_1[1:-1,1:-1] + dt*V_a[1:-1,1:-1] + \
-        0.5*Cx2*(u_1[:-2,1:-1] - 2*u_1[1:-1,1:-1] + u_1[2:,1:-1]) +\
-        0.5*Cy2*(u_1[1:-1,:-2] - 2*u_1[1:-1,1:-1] + u_1[1:-1,2:]) +\
+        0.5*(-Cx2[:-2,1:-1]*(u_1[1:-1,1:-1] - u_1[:-2,1:-1]) + Cx2[1:-1,1:-1]*(u_1[2:,1:-1] - u_1[1:-1,1:-1])) +\
+        0.5*(-Cy2[1:-1,:-2]*(u_1[1:-1,1:-1] - u_1[1:-1,:-2]) + Cy2[1:-1,1:-1]*(u_1[1:-1,2:] - u_1[1:-1,1:-1])) +\
         0.5*dt2*f_a[1:-1,1:-1]
-        # Boundary condition u=0
-        u[: ,0] = u[:,1]
-        u[:,Ny] = u[:,Ny-1]
-        u[0 ,:] = u[1,:]
-        u[Nx,:] = u[Nx-1,:]
+        
+        # Boundary condition du/dn = 0: we use on j = 0, a ghost point so that u[i,j-1] = u[i,j+1], and so on
+        # Looks messy! maybe some cleaning possible.
+        
+        #u[1:-1,0] = u_1[1:-1,0] 
+
+        u[1:-1 ,0] = u_1[1:-1,0] + dt*V_a[1:-1,0] + \
+        0.5*(-Cx2[:-2,0]*(u_1[1:-1,0] - u_1[:-2,0]) + Cx2[1:-1,0]*(u_1[2:,0] - u_1[1:-1,0])) +\
+        0.5*(-Cx2[1:-1,1]*(u_1[1:-1,0] - u_1[1:-1,1]) + Cx2[1:-1,0]*(u_1[2:,1] - u_1[1:-1,0])) +\
+        0.5*dt2*f_a[1:-1,0]
+
+        #u[:,Ny] = u[:,Ny-1]
+
+        u[1:-1,Ny] = u_1[1:-1,Ny] + dt*V_a[1:-1,Ny] + \
+        0.5*(-Cx2[:-2,Ny]*(u_1[1:-1,Ny] - u[:-2,Ny]) + Cx2[1:-1,Ny]*(u_1[2:,Ny] - u_1[1:-1,Ny])) +\
+        0.5*(-Cy2[1:-1,Ny-1]*(u_1[1:-1,Ny] - u_1[1:-1,Ny-1]) + Cy2[1:-1,Ny]*(u_1[2:,Ny-1] - u_1[1:-1,Ny])) +\
+        0.5*dt2*f_a[1:-1,Ny]
+
+        #u[0,:] = u[1,:]
+
+        u[0,1:-1] = u_1[0,1:-1] + dt*V_a[0,1:-1] + \
+        0.5*(-Cx2[1,1:-1]*(u_1[0,1:-1] - u_1[1,1:-1]) + Cx2[0,1:-1]*(u_1[1,1:-1] - u_1[0,1:-1])) +\
+        0.5*(-Cy2[0,:-2]*(u_1[0,1:-1] - u_1[0,:-2]) + Cy2[0,1:-1]*(u_1[0,2:] - u_1[0,1:-1])) +\
+        0.5*dt2*f_a[0,1:-1]
+
+        #u[Nx,:] = u[Nx-1,:]
+
+        u[Nx,1:-1] = u_1[Nx,1:-1] + dt*V_a[Nx,1:-1] + \
+        0.5*(-Cx2[Nx-1,1:-1]*(u_1[Nx,1:-1] - u_1[Nx-1,1:-1]) + Cx2[Nx,1:-1]*(u_1[Nx-1,1:-1] - u_1[Nx,1:-1])) +\
+        0.5*(-Cy2[Nx,:-2]*(u_1[Nx,1:-1] - u_1[Nx,:-2]) + Cy2[Nx,1:-1]*(u_1[Nx,2:] - u_1[Nx,1:-1])) +\
+        0.5*dt2*f_a[Nx,1:-1]
+
+        # corner points:
+        u[0,0] = u[1,1]; u[Nx,0] = u[Nx-1,1]; u[Nx, Ny] = u[Nx-1,Ny-1]; u[0,Ny] = u[1,Ny-1];
 
     if user_action is not None:
         user_action(u, x, xv, y, yv, t, 1)
@@ -127,17 +194,18 @@ def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
     if version == 'scalar':
         # use f(x,y,t) function
         for n in range(1,N):
-        	u = advance(u, u_1, u_2, f, x, y, t, n, Cx2, Cy2, dt2)
+        	u = advance(u, u_1, u_2, f, beta, x, y, t, n, q, dx, dy, dt)
         	filename = 'solution_%06d.txt' % n
         	np.savetxt(filename, u, fmt='%.18e', delimiter=' ', newline='\n')
         	u_2[:,:], u_1[:,:] = u_1, u
     elif version == 'vectorized':
         for n in range(1,N):
-        	f_a[:,:] = f(xv, yv, t[n])  # precompute, size as u
-        	u = advance(u, u_1, u_2, f_a, x, y, t, Cx2, Cy2, dt2)
-        	filename = 'solution_%06d.txt' % n
-        	np.savetxt(filename, u, fmt='%.18e', delimiter=' ', newline='\n')
-        	u_2[:,:], u_1[:,:] = u_1, u
+            f_a[:,:] = f(xv, yv, t[n])  # precompute, size as u
+            qv[:,:] = q(xv, yv)         # precompute, size as u
+            u = advance(u, u_1, u_2, f_a, beta, x, y, t, n, qv, dx, dy, dt)
+            filename = 'solution_%06d.txt' % n
+            np.savetxt(filename, u, fmt='%.18e', delimiter=' ', newline='\n')
+            u_2[:,:], u_1[:,:] = u_1, u
 
     elif version == 'cpp':
     	file1 = 'uone.txt'
@@ -145,40 +213,98 @@ def solver(I, V, f, c, Lx, Ly, Nx, Ny, dt, T,
     	file2 = 'utwo.txt'
     	np.savetxt(file1, u_2, fmt='%.18e', delimiter=' ', newline='\n')
     	os.system('wave2d'+' '+file1+' '+file2)
+        file3 = 'parameters.txt'
     t1 = time.clock()
     # dt might be computed in this function so return the value
     return dt, t1 - t0
 
-def advance_scalar(u, u_1, u_2, f, x, y, t, n, Cx2, Cy2, dt2):
+def advance_scalar(u, u_1, u_2, f, beta, x, y, t, n, q, dx, dy, dt):
     Nx = u.shape[0]-1;  Ny = u.shape[1]-1
     for i in range(1, Nx):
         for j in range(1, Ny):
-            u[i,j] = 2*u_1[i,j] - u_2[i,j] + \
-                     Cx2*(u_1[i-1,j] - 2*u_1[i,j] + u_1[i+1,j]) + \
-                     Cy2*(u_1[i,j-1] - 2*u_1[i,j] + u_1[i,j+1]) + \
-                     dt2*f(x[i], y[j], t[n])
-    # Boundary condition u=0
+            Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+            Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+            u[i,j] = 1./(1+dt*beta)*(2*u_1[i,j] - (1-dt*beta)*u_2[i,j] + \
+                (-Cx2l*(u_1[i,j] - u_1[i-1,j]) + Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+                (-Cy2l*(u_1[i,j] - u_1[i,j-1]) + Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
+                dt**2*f(x[i], y[j], t[n]))
+
+    # Boundary condition du/dn = 0, ugly! 
     j = 0
-    for i in range(0, Nx+1): u[i,j] = 0
+    for i in range(1, Nx): 
+        Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+        Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+        u[i,j] = 1./(1+dt*beta)*(2*u_1[i,j] - (1-dt*beta)*u_2[i,j] + \
+                (-Cx2l*(u_1[i,j] - u_1[i-1,j]) + Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+                (-Cy2l*(u_1[i,j] - u_1[i,j+1]) + Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
+                dt**2*f(x[i], y[j], t[n]))
     j = Ny
-    for i in range(0, Nx+1): u[i,j] = 0
+    for i in range(1, Nx): 
+        Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+        Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+        u[i,j] = 1./(1+dt*beta)*(2*u_1[i,Ny] - (1-dt*beta)*u_2[i,Ny] + \
+                (-Cx2l*(u_1[i,Ny] - u_1[i-1,Ny]) + Cx2r*(u_1[i+1,Ny] - u_1[i,Ny])) + \
+                (-Cy2l*(u_1[i,Ny] - u_1[i,Ny-1]) + Cy2r*(u_1[i,Ny-1] - u_1[i,Ny])) + \
+                dt**2*f(x[i], y[j], t[n]))
     i = 0
-    for j in range(0, Ny+1): u[i,j] = 0
+    for j in range(1, Ny):
+        Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+        Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+        u[i,j] = 1./(1+dt*beta)*(2*u_1[i,j] - (1-dt*beta)*u_2[i,j] + \
+                (-Cx2l*(u_1[i,j] - u_1[i+1,j]) + Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+                (-Cy2l*(u_1[i,j] - u_1[i,j-1]) + Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
+                dt**2*f(x[i], y[j], t[n]))
+
     i = Nx
-    for j in range(0, Ny+1): u[i,j] = 0
+    for j in range(1, Ny): 
+        Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
+        Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
+        u[i,j] = 1./(1+dt*beta)*(2*u_1[i,j] - (1-dt*beta)*u_2[i,j] + \
+                (-Cx2l*(u_1[i,j] - u_1[i-1,j]) + Cx2r*(u_1[i-1,j] - u_1[i,j])) + \
+                (-Cy2l*(u_1[i,j] - u_1[i,j-1]) + Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
+                dt**2*f(x[i], y[j], t[n]))
+
+    # corner points:
+    u[0,0] = u[1,1]; u[Nx,0] = u[Nx-1,1]; u[Nx, Ny] = u[Nx-1,Ny-1]; u[0,Ny] = u[1,Ny-1];
     return u
 
-def advance_vectorized(u, u_1, u_2, f_a, x, y, t, Cx2, Cy2, dt2):
-    u[1:-1,1:-1] = 2*u_1[1:-1,1:-1] - u_2[1:-1,1:-1] + \
-         Cx2*(u_1[:-2,1:-1] - 2*u_1[1:-1,1:-1] + u_1[2:,1:-1]) + \
-         Cy2*(u_1[1:-1,:-2] - 2*u_1[1:-1,1:-1] + u_1[1:-1,2:]) + \
-         dt2*f_a[1:-1,1:-1]
-    # Boundary condition u=0
+def advance_vectorized(u, u_1, u_2, f_a, beta, x, y, t, n, qv, dx, dy, dt):
+    xfactor = dt*dt/(dx*dx)
+    yfactor = dt*dt/(dy*dy)
+    u[1:-1,1:-1] = (1./(1+dt*beta))*(2*u_1[1:-1,1:-1] - (1-dt*beta)*u_2[1:-1,1:-1] + \
+       xfactor*(qv[1:-1,1:-1]*(u_1[2:,1:-1] - u_1[1:-1,1:-1]) - \
+       qv[0:-2,1:-1]*(u_1[1:-1,1:-1] - u_1[0:-2,1:-1])) + \
+       yfactor*(qv[1:-1,1:-1]*(u_1[1:-1,2:] - u_1[1:-1,1:-1]) - \
+       qv[1:-1,0:-2]*(u_1[1:-1,1:-1] - u_1[1:-1,0:-2])) + \
+       dt**2*f_a[1:-1,1:-1])
+
+
+    #Boundary condition du/dn = 0, ugly!
     Nx = u.shape[0]-1;  Ny = u.shape[1]-1
-    u[: ,0] = u[:,1]
-    u[:,Ny] = u[:,Ny-1]
-    u[0 ,:] = u[1,:]
-    u[Nx,:] = u[Nx-1,:]
+    
+    u[1:-1,0] = (1./(1+dt*beta))*(2*u_1[1:-1,0] - (1-dt*beta)*u_2[1:-1,0] + \
+       xfactor*(qv[1:-1,0]*(u_1[1:-1,0]-u_1[1:-1,0]) - qv[0:-2,0]*(u_1[1:-1,0] - u_1[1:-1,0])) + \
+       yfactor*(qv[1:-1,0]*(u_1[1:-1,1]-u_1[1:-1,0]) - qv[1:-1,1]*(u_1[1:-1,0] - u_1[1:-1,1])) + \
+       dt**2*f_a[1:-1,0]) 
+
+    u[1:-1,Ny] = (1./(1+dt*beta))*(2*u_1[1:-1,Ny] - (1-dt*beta)*u_2[1:-1,Ny] + \
+       xfactor*(qv[1:-1,Ny]*(u_1[1:-1,Ny]-u_1[1:-1,Ny]) - qv[0:-2,Ny]*(u_1[1:-1,Ny] - u_1[1:-1,Ny])) + \
+       yfactor*(qv[1:-1,Ny]*(u_1[1:-1,Ny]-u_1[1:-1,Ny]) - qv[1:-1,Ny-1]*(u_1[1:-1,Ny] - u_1[1:-1,Ny-1])) + \
+       dt**2*f_a[1:-1,Ny]) 
+ 
+    u[0,1:-1] = (1./(1+dt*beta))*(2*u_1[0,1:-1] - (1-dt*beta)*u_2[0,1:-1] + \
+       xfactor*(qv[1,1:-1]*(u_1[1,1:-1] - u_1[0,1:-1]) - qv[0,1:-1]*(u_1[0,1:-1] - u_1[1,1:-1])) + \
+       yfactor*(qv[0,1:-1]*(u_1[0,2:] - u_1[0,1:-1]) - qv[0,0:-2]*(u_1[0,1:-1] - u_1[0,0:-2])) + \
+       dt**2*f_a[0,1:-1])
+
+    u[Nx,1:-1] = (1./(1+dt*beta))*(2*u_1[Nx,1:-1] - (1-dt*beta)*u_2[Nx,1:-1] + \
+       xfactor*(qv[Nx,1:-1]*(u_1[Nx-1,1:-1] - u_1[Nx,1:-1]) - qv[Nx-1,1:-1]*(u_1[Nx,1:-1] - u_1[Nx-1,1:-1])) + \
+       yfactor*(qv[Nx,1:-1]*(u_1[Nx,2:] - u_1[Nx,1:-1]) - qv[Nx,0:-2]*(u_1[Nx,1:-1] - u_1[Nx,0:-2])) + \
+       dt**2*f_a[Nx,1:-1])
+
+    #corner points:
+    u[0,0] = u[1,1]; u[Nx,0] = u[Nx-1,1]; u[Nx, Ny] = u[Nx-1,Ny-1]; u[0,Ny] = u[1,Ny-1];
+    #u[:,0] = 0.0; u[0,:] = 0.0; u[Nx,:] = 0.0; u[:,Ny] = 0.0
     return u
 
     import nose.tools as nt
@@ -251,7 +377,11 @@ def run_Gaussian(plot_method=1, version='vectorized'):
 
     Lx = 10
     Ly = 10
-    c = 1.0
+    def c(x,y): 
+        s = (np.size(x),np.size(y))
+        c = np.zeros(s)
+        c = c + 1
+        return c
 
     def I(x, y):
         """Gaussian peak at (Lx/2, Ly/2)."""
@@ -259,13 +389,11 @@ def run_Gaussian(plot_method=1, version='vectorized'):
         
 
     Nx = 40; Ny = 40; T = 20
-    dt,time = solver(I, None, None, c, Lx, Ly, Nx, Ny, 0, T, version=version)
-
+    dt,time = solver(I, None, None, c, 0.0, Lx, Ly, Nx, Ny, 0, T, version=version)
+    print dt
     if plot_method == 1:
     	mvname = 'test'
     	from mcrtmv import mcrtmv
-    	print dt
-    	print type(dt)
     	N = int(round(T/float(dt)))
     	mcrtmv(N, mvname, dt,Lx,Ly,Nx,Ny)
 
@@ -273,7 +401,7 @@ def run_Gaussian(plot_method=1, version='vectorized'):
 
 if __name__ == '__main__':
     import sys
-    run_Gaussian()
+    run_Gaussian()#version='scalar')
     #from scitools.misc import function_UI
     #cmd = function_UI([test_quadratic, run_efficiency_tests,
     #                   run_Gaussian, ], sys.argv)

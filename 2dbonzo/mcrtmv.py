@@ -56,5 +56,5 @@ def mcrtmv(frames, mvname, dt,Lx,Ly,Nx,Ny):
 
 	fig.scene.disable_render = False
 	os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=20 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o %s.mpg" % mvname);
-if __name__ = "__name__":
+if __name__ == "__name__":
 	mcrtmv(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7]);
