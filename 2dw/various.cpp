@@ -10,12 +10,11 @@ double no_source(double x, double y, double t)
 }
 double small_source(double x, double y, double t)
 {
-    return 2*exp(-((x-2)*(x-2) + (y-2)*(y-2))*180 );
+    return exp(-t)*exp(-((x-2)*(x-2) + (y-2)*(y-2))*180 );
 }
 // Initial condition
 double initcond_exp(double x,double y)
 {
-    return 0;
     return exp( -((x-1)*(x-1) + (y-1)*(y-1))*70 );
 }
 double initcond_sin(double x, double y)
@@ -40,7 +39,7 @@ double coeff(double x, double y)
 }
 double coeff2(double x, double y)
 {
-    return 1 - exp( - ((x-2)*(x-2) + (y-2)*(y-2))*20 ) - exp( -((x-3)*(x-3) + (y-3)*(y-3))*20 );
+    return 1 - exp( - ((x-2)*(x-2) + (y-2)*(y-2))*20 );
 }
 double coeff3(double x, double y)
 {
@@ -58,4 +57,21 @@ double coeff3(double x, double y)
     int new_y = y*input.TellWidth()/Ly;
 
     return 0.213*(int)input(new_y,new_x)->Red + 0.715*(int)input(new_y,new_x)->Green + 0.072*(int)input(new_y,new_x)->Blue;
+}
+double Vzero(double x, double y) {
+    return 0;
+}
+double omega = 0.5;
+double b = 0.01;
+double exact_source(double x, double y, double t) {
+    return exp(-b*t)*cos(pi*x/4)*cos(pi*y/4)*(b*b*cos(omega*t) + 2*b*omega*sin(omega*t) -omega*omega*cos(omega*t) - b*cos(omega*t) - omega*sin(omega*t) - pi*pi/8*cos(omega*t) );
+}
+double exact_V(double x, double y) {
+    return -b*cos(pi*x/4)*cos(pi*y/4);
+}
+double exact_initc(double x, double y) {
+    return cos(pi*x/4)*cos(pi*y/4);
+}
+double exact_coeff(double x, double y) {
+    return 1;
 }
