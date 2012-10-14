@@ -58,6 +58,7 @@ def solver(I, V, f, q, beta, Lx, Ly, Nx, Ny, dt, T,
     elif dt > stability_limit:
         print 'error: dt=%g exceeds the stability limit %g' % \
               (dt, stability_limit)
+
     N = int(round(T/float(dt)))
     t = linspace(0, N*dt, N+1)    # mesh points in time
     
@@ -99,8 +100,8 @@ def solver(I, V, f, q, beta, Lx, Ly, Nx, Ny, dt, T,
                 Cx2l = q(x[i]-dx/2., y[j])*(dt/dx)**2;  Cx2r = q(x[i]+dx/2.,y[j])*(dt/dx)**2    # help variables
                 Cy2l = q(x[i], y[j]-dy/2.)*(dt/dy)**2;  Cy2r = q(x[i],y[j]+dy/2.)*(dt/dy)**2    # help variables
                 u[i,j] = u_1[i,j] + dt*V(x[i], y[j]) + \
-                0.5*(Cx2l*(u_1[i,j] - u_1[i-1,j]) - Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
-                0.5*(Cy2l*(u_1[i,j] - u_1[i,j-1]) - Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
+                0.5*(-Cx2l*(u_1[i,j] - u_1[i-1,j]) + Cx2r*(u_1[i+1,j] - u_1[i,j])) + \
+                0.5*(-Cy2l*(u_1[i,j] - u_1[i,j-1]) + Cy2r*(u_1[i,j+1] - u_1[i,j])) + \
                 0.5*dt2*f(x[i], y[j], t[n])
         
         # Boundary condition du/dn = 0: we use on j = 0, a ghost point so that u[i,j-1] = u[i,j+1], and so on
@@ -165,8 +166,8 @@ def solver(I, V, f, q, beta, Lx, Ly, Nx, Ny, dt, T,
         #u[:,Ny] = u[:,Ny-1]
 
         u[1:-1,Ny] = u_1[1:-1,Ny] + dt*V_a[1:-1,Ny] + \
-        0.5*(-Cx2[:-2,Ny]*(u_1[1:-1,Ny] - u[:-2,Ny]) + Cx2[1:-1,Ny]*(u_1[2:,Ny] - u_1[1:-1,Ny])) +\
-        0.5*(-Cy2[1:-1,Ny-1]*(u_1[1:-1,Ny] - u_1[1:-1,Ny-1]) + Cy2[1:-1,Ny]*(u_1[2:,Ny-1] - u_1[1:-1,Ny])) +\
+        0.5*(-Cx2[:-2,Ny]*(u_1[1:-1,Ny] - u_1[:-2,Ny]) + Cx2[1:-1,Ny]*(u_1[2:,Ny] - u_1[1:-1,Ny])) +\
+        0.5*(-Cy2[1:-1,Ny-1]*(u_1[1:-1,Ny] - u_1[1:-1,Ny-1]) + Cy2[1:-1,Ny]*(u_1[1:-1,Ny-1] - u_1[1:-1,Ny])) +\
         0.5*dt2*f_a[1:-1,Ny]
 
         #u[0,:] = u[1,:]
@@ -283,13 +284,13 @@ def advance_vectorized(u, u_1, u_2, f_a, beta, x, y, t, n, qv, dx, dy, dt):
     Nx = u.shape[0]-1;  Ny = u.shape[1]-1
     
     u[1:-1,0] = (1./(1+dt*beta))*(2*u_1[1:-1,0] - (1-dt*beta)*u_2[1:-1,0] + \
-       xfactor*(qv[1:-1,0]*(u_1[1:-1,0]-u_1[1:-1,0]) - qv[0:-2,0]*(u_1[1:-1,0] - u_1[1:-1,0])) + \
-       yfactor*(qv[1:-1,0]*(u_1[1:-1,1]-u_1[1:-1,0]) - qv[1:-1,1]*(u_1[1:-1,0] - u_1[1:-1,1])) + \
+       xfactor*(qv[1:-1,0]*(u_1[2:,0]-u_1[1:-1,0]) - qv[0:-2,0]*(u_1[1:-1,0] - u_1[0:-2,0])) + \
+       yfactor*(qv[1:-1,1]*(u_1[1:-1,1]-u_1[1:-1,0]) - qv[1:-1,0]*(u_1[1:-1,0] - u_1[1:-1,1])) + \
        dt**2*f_a[1:-1,0]) 
 
     u[1:-1,Ny] = (1./(1+dt*beta))*(2*u_1[1:-1,Ny] - (1-dt*beta)*u_2[1:-1,Ny] + \
-       xfactor*(qv[1:-1,Ny]*(u_1[1:-1,Ny]-u_1[1:-1,Ny]) - qv[0:-2,Ny]*(u_1[1:-1,Ny] - u_1[1:-1,Ny])) + \
-       yfactor*(qv[1:-1,Ny]*(u_1[1:-1,Ny]-u_1[1:-1,Ny]) - qv[1:-1,Ny-1]*(u_1[1:-1,Ny] - u_1[1:-1,Ny-1])) + \
+       xfactor*(qv[1:-1,Ny]*(u_1[2:,Ny]-u_1[1:-1,Ny]) - qv[0:-2,Ny]*(u_1[1:-1,Ny] - u_1[0:-2,Ny])) + \
+       yfactor*(qv[1:-1,Ny]*(u_1[1:-1,Ny-1]-u_1[1:-1,Ny]) - qv[1:-1,Ny-1]*(u_1[1:-1,Ny] - u_1[1:-1,Ny-1])) + \
        dt**2*f_a[1:-1,Ny]) 
  
     u[0,1:-1] = (1./(1+dt*beta))*(2*u_1[0,1:-1] - (1-dt*beta)*u_2[0,1:-1] + \
@@ -307,7 +308,8 @@ def advance_vectorized(u, u_1, u_2, f_a, beta, x, y, t, n, qv, dx, dy, dt):
     #u[:,0] = 0.0; u[0,:] = 0.0; u[Nx,:] = 0.0; u[:,Ny] = 0.0
     return u
 
-    import nose.tools as nt
+"""  
+import nose.tools as nt
 
 def test_quadratic(Nx=4, Ny=5):
     def exact_solution(x, y, t):
@@ -365,7 +367,7 @@ def run_efficiency_tests(nrefinements=4):
             cpu = {version: cpu[version]/cpu_min for version in cpu}
             print '%-15s' % '%dx%d' % (Nxy, Nxy),
             print ''.join(['%13.1f' % cpu[version] for version in versions])
-
+"""
 def run_Gaussian(plot_method=1, version='vectorized'):
     """
     Initial Gaussian bell in the middle of the domain.
@@ -385,8 +387,8 @@ def run_Gaussian(plot_method=1, version='vectorized'):
 
     def I(x, y):
         """Gaussian peak at (Lx/2, Ly/2)."""
-        return 3*exp(-0.5*(x-Lx/2.0)**2 - 0.5*(y-Ly/2.0)**2)
-        
+        #return 3*exp(-0.5*(x-Lx/2.0)**2 - 0.5*(y-Ly/2.0)**2)
+        return 1.2
 
     Nx = 40; Ny = 40; T = 20
     dt,time = solver(I, None, None, c, 0.0, Lx, Ly, Nx, Ny, 0, T, version=version)
@@ -395,7 +397,7 @@ def run_Gaussian(plot_method=1, version='vectorized'):
     	mvname = 'test'
     	from mcrtmv import mcrtmv
     	N = int(round(T/float(dt)))
-    	mcrtmv(N, mvname, dt,Lx,Ly,Nx,Ny)
+    	mcrtmv(N, dt,Lx,Ly,Nx,Ny, savemovie=False, mvname=mvname)
 
 
 
