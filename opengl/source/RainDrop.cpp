@@ -1,5 +1,5 @@
 #include <RainDrop.h>
-
+#include <GLUT/glut.h>
 RainDrop::RainDrop(int _i, int _j, double _z) {
 	i = _i;
 	j = _j;
@@ -7,5 +7,8 @@ RainDrop::RainDrop(int _i, int _j, double _z) {
 }
 
 void RainDrop::render(vec &x, vec &y) {
-	glVertex3f(x(i), y(j), z);
+	glPushMatrix();
+	glTranslatef(x(i),y(j),z);
+	glutSolidSphere(0.01, 4, 4);
+	glPopMatrix();
 }

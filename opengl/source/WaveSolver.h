@@ -25,7 +25,7 @@ public:
 	vec x;
 	vec y;
 	double dampingFactor;
-	double time;
+	double t;
 	double dt;
 	double dr;
 	double dtdt_drdr;
@@ -39,7 +39,8 @@ public:
 	void step();
 	void changeGroundZIncrease(double delta_z);
 	void calculateWalls();
-
+	void calculateMean();
+	void createRandomGauss();
 	void copyToGrid(AObject& grid);
 	double u(int i,int j, int di=0, int dj=0);
 	double uprev(int i,int j, int di=0, int dj=0);

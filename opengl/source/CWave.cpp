@@ -62,8 +62,7 @@ void CWave::Initialize_() {
     var.groundGrid.InitializeGrid(ini.getint("grid_size"),2.0);
     
     var.groundGrid.copyGridFromBMP(var.solver.ground);
-    var.groundGrid.pos.z = -1;
-
+    
     var.render_ground = true;
     var.render_wall = true;
     var.render_wave = true;
@@ -82,14 +81,16 @@ void CWave::moveRainDrops() {
         var.raindrops[i].z -= 0.005;
 
         if(var.raindrops[i].z <= var.solver.u_(var.raindrops[i].i,var.raindrops[i].j)) {
-            var.solver.source(var.raindrops[i].i,var.raindrops[i].j) = 0.005;
+            var.solver.source(var.raindrops[i].i,var.raindrops[i].j) = 0.02;
             var.raindrops.erase(var.raindrops.begin()+i--);
         }
     }
 }
 
 void CWave::createRainDrops() {
-    for(int i=0;i<5;i++) {
+    if((rand()%20)) return;
+
+    for(int i=0;i<1;i++) {
         double x = rand() % var.solver.Nr;
         double y = rand() % var.solver.Nr;
         double z = 0.5;
@@ -99,12 +100,9 @@ void CWave::createRainDrops() {
 }
 
 void CWave::renderRainDrops() {
-    glPointSize(3);
-    glColor4f(0.2, 0.255,0.5, 0.7);
-    glBegin(GL_POINTS);
+    glColor4f(0.2, 0.255,0.5, 0.85);
     for(int i=0; i<var.raindrops.size(); i++) 
         var.raindrops[i].render(var.solver.x,var.solver.y);
-    glEnd();
 }
 
 void CWave::RenderWall(int i,int j, int di, int dj) {
@@ -112,7 +110,7 @@ void CWave::RenderWall(int i,int j, int di, int dj) {
     vec &y = var.solver.x;
     int Nr = var.solver.Nr;
 
-    double z_top = 0.05;
+    double z_top = var.solver.avg_u;
     double z_bot = -1.0;
 
     glColor4f(0.05, 0.05, 0.05, 1.0);
@@ -166,15 +164,14 @@ void CWave::renderWalls() {
 
 void CWave::renderWave() {
     var.solver.copyToGrid(var.waveGrid);
-    var.waveGrid.pos.z = var.solver.avg_u;
-
+    
     if(var.render_shader) {
         
         var.waveGrid.calculateGridFaceNormals();
         var.waveGrid.calculateGridVertexNormals();
 
         double w = 0.5;
-        var.waveShader.lightpos.Set(2*cos(var.solver.time*w),2*sin(var.solver.time*w),1);
+        var.waveShader.lightpos.Set(2*cos(var.solver.t*w),2*sin(var.solver.t*w),1);
         
         var.waveShader.Start();
     }
@@ -218,11 +215,11 @@ void CWave::Events ()  {
     if (key=='6')
         var.speed = 8;
     if (key=='7')
-        var.speed = 14;
-    if (key=='8')
         var.speed = 20;
+    if (key=='8')
+        var.speed = 50;
     if (key=='9')
-        var.speed = 30;
+        var.speed = 100;
     if (key=='q')
         var.render_ground = !var.render_ground;
     if (key=='w')
@@ -235,6 +232,8 @@ void CWave::Events ()  {
         var.theta -= 0.05;
     if (key=='d')
         var.theta += 0.05;
+    if(key==' ')
+        var.solver.createRandomGauss();
     if (key=='+') {
         var.solver.changeGroundZIncrease(0.01);
         var.groundGrid.copyGridFromBMP(var.solver.ground);
@@ -243,8 +242,8 @@ void CWave::Events ()  {
         var.solver.changeGroundZIncrease(-0.01);
         var.groundGrid.copyGridFromBMP(var.solver.ground);
     }
-    // if (key=='r')
-        // var.render_shader = !var.render_shader;
+    if (key=='t')
+        var.render_shader = !var.render_shader;
 
     key = '0';
 

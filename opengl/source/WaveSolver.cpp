@@ -2,7 +2,7 @@
 #include <CWave.h>
 #include <CIniFile.h>
 #include <CVector.h>
-
+#include <time.h>
 // Mods the index on system size
 inline int WaveSolver::idx(int i) {
 	return (i+10*Nr)%Nr;
@@ -30,35 +30,72 @@ inline double WaveSolver::uprev(int i,int j, int di, int dj) {
 inline double WaveSolver::calcC(int i, int j) {
 	i=(i+10*Nr)%Nr;
 	j=(j+10*Nr)%Nr;
-	return max(1-ground(i,j),1.0);
+
+	return max(-ground(i,j),1.0);
 }
 
-
-
 void WaveSolver::copyToGrid(AObject& grid) {
-	for (int i=0;i<Nr;i++)
+	for (int i=0;i<Nr;i++) {
 		for (int j=0;j<Nr;j++) {
 			grid.getGridPos(i,j)->pos.z = u_(i,j);
-		}	
+		}
+	}
 }
 
 void WaveSolver::changeGroundZIncrease(double deltaZ) {
 	ground += deltaZ;
+	calculateWalls();
+}
+
+void WaveSolver::calculateMean() {
+	avg_u = 0;
+	int count = 0;
 	for(int i=0;i<Nr;i++) {
 		for(int j=0;j<Nr;j++) {
-			walls(i,j) = ground(i,j) >= 1.0;
+			if(!walls(i,j)) {
+				avg_u += u_next(i,j);
+				count++;
+			}
+		}
+	}
+
+	avg_u /= count;
+}
+
+void WaveSolver::calculateWalls() {
+	int old_val;
+	for(int i=0;i<Nr;i++) {
+		for(int j=0;j<Nr;j++) {
+			old_val = walls(i,j);
+			walls(i,j) = ground(i,j) > avg_u;
+			if(old_val != walls(i,j)) {
+				u_prev(i,j) = u_(i,j) = avg_u;
+			}
 		}
 	}
 }
-void WaveSolver::calculateWalls() {
+
+void WaveSolver::createRandomGauss() {
+
+	double _x, _y;
+	double x0 = r_min + (r_max-r_min)*rand()/(double)RAND_MAX;
+	double y0 = r_min + (r_max-r_min)*rand()/(double)RAND_MAX;
+	double stddev = 0.01;
+	
 	for(int i=0;i<Nr;i++) {
 		for(int j=0;j<Nr;j++) {
-			walls(i,j) = ground(i,j) >= 1.0+avg_u;
+			_x = x(i)-x0; 					// The x- and y-center can have an offset
+			_y = y(j)-y0;
+
+			u_prev(i,j) += 0.1*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev*stddev));
+			u_(i,j)     += 0.1*exp(-(pow(_x,2)+pow(_y,2))/(2*stddev*stddev));
 		}
 	}
 }
 
 WaveSolver::WaveSolver(CIniFile &ini) {
+	srand ( time(NULL) );
+
 	Nr = ini.getint("grid_size");
 	dampingFactor = ini.getdouble("damping");
 	walls = zeros<mat>(Nr,Nr);
@@ -67,13 +104,16 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	// Read in the ground info from bmp file
 	// The values can be adjusted and scaled in the wave.ini
 	ground = readBMP((char*)ini.getstring("ground_file").c_str());
+	ground -= 0.8;
+	ground *= 1.0/0.8;
+
 	ground += ini.getdouble("ground_z_increase");
 	ground *= ini.getdouble("ground_z_scale");;
 	
 	max_value = 0;
 	r_min = -1.0;
 	r_max = 1.0;               			// Square grid
-	time = 0;
+	t = 0;
 
 	dr = (r_max-r_min)/(Nr-1);		 	// Step length in space
 	double c_max = 1.0;       			// Used to determine dt and Nt
@@ -96,7 +136,7 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 	double x0 = ini.getdouble("x0");
 	double y0 = ini.getdouble("y0");
 	double stddev = ini.getdouble("stddev");
-
+	
 	for(int i=0;i<Nr;i++) {
 		x(i) = r_min+i*dr;
 		for(int j=0;j<Nr;j++) {
@@ -107,28 +147,32 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 
 			u_prev(i,j) = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev*stddev));
 			u_(i,j)     = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev*stddev));
+			
 			max_value = max(max_value,abs(u_(i,j)));
 		}
 	}
 
+	// avg_u = mean(mean(u_));
 	// Normalize these to the amplitude we have chosen in ini
 	double amplitude = ini.getdouble("amplitude");
 	u_prev *= amplitude/max_value;
 	u_ *= amplitude/max_value;
 	max_value = amplitude;
-	avg_u = mean(mean(u_));
+
+	// avg_u = mean(mean(u_));
 
 	calculateWalls();
+	calculateMean();
 }
 
 void WaveSolver::step() {
-	time += dt;
+	t += dt;
 	
 	double cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest; 		// Temp variables for speed'n read
 	double factor = 1.0/(1+0.5*dampingFactor*dt);
 	int i,j;
 
-	#pragma omp parallel for private(cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest,i,j) num_threads(4)
+	#pragma omp parallel for private(cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest,i,j) num_threads(1)
 	for(i=0;i<Nr;i++) {
 		for(j=0;j<Nr;j++) {
 			c = calcC(i,j);
@@ -143,16 +187,17 @@ void WaveSolver::step() {
 			ddt_rest = -(1-0.5*dampingFactor*dt)*uprev(i,j) + 2*u(i,j);
 			
 			// Set value to zero if we have a wall.
-			// u_next(i,j) = walls(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source);
 			u_next(i,j) = walls(i,j) ? 0 : factor*(dtdt_drdr*(ddx + ddy) + ddt_rest + source(i,j));
 		}
 	}
 
 	u_prev = u_;
 	u_ = u_next;
-	avg_u = mean(mean(u_));
+	// avg_u = mean(mean(u_));
 	calculateWalls();
+	calculateMean();
 	source.zeros(); // Reset the source
+
 }
 
 mat readBMP(char* filename)
