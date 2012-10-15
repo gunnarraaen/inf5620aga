@@ -17,7 +17,7 @@ X,Y = np.meshgrid(x,y);
 size = 500,500
 """
 
-def mcrtmv(frames, mvname, dt,Lx,Ly,Nx,Ny):
+def mcrtmv(frames, dt,Lx,Ly,Nx,Ny,savemovie=False, mvname='test'):
 	x = np.linspace(0,Lx,Nx);
 	y = np.linspace(0,Lx,Nx);
 	X,Y = np.meshgrid(x,y);
@@ -38,22 +38,27 @@ def mcrtmv(frames, mvname, dt,Lx,Ly,Nx,Ny):
 	ml.xlabel('x position')
 	ml.ylabel('y position')
 	ml.zlabel('wave amplitude')
-	"""
-	pl.ion()
-	arr = ml.screenshot()
-	img = pl.imshow(arr)
-	pl.axis('off')
-	"""
+	if savemovie == True:
+		pl.ion()
+		arr = ml.screenshot()
+		img = pl.imshow(arr)
+		pl.axis('off')
+	
 	for i in range(2,frames):
-		#arr = ml.screenshot()
-		#img.set_array(arr)
+
 		u = np.loadtxt('solution_%06d.txt'%i);
 		s.mlab_source.scalars = u
 		fname = '_tmp%07d.png' % i
-		#pl.savefig(filename=fname)#,figure=fig)
-		#print 'Saving frame', fname
-		#pl.draw()
+		if savemovie == True:
+			arr = ml.screenshot()
+			img.set_array(arr)
+			pl.savefig(filename=fname)#,figure=fig)
+			print 'Saving frame', fname
+			pl.draw()
 
 	fig.scene.disable_render = False
 	os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=20 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o %s.mpg" % mvname);
 
+
+if __name__ == "__name__":
+	mcrtmv(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],sys.argv[7]);

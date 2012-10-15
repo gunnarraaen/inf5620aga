@@ -174,7 +174,7 @@ int main(int argc, char** argv)
 		}}*/
 		if (n % write_delay == 0) {
 			str.str(std::string(""));
-			str << "test.d" << ZeroPadNumber(n/write_delay);
+            str << "test.d" << padnumber(n/write_delay);
 			print_matrix(Nx,u,str.str().c_str(),2);
 		}
 	}

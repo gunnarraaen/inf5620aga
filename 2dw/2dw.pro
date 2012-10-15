@@ -4,5 +4,6 @@ CONFIG -= qt
 
 SOURCES += \
     wave.cpp \
-    tools.cpp
+    tools.cpp \
+    various.cpp
 
