@@ -12,7 +12,7 @@
 \usepackage{url}
 
 \newcommand{\dd}[2]{\frac{\mathrm{d}#1}{\mathrm{d}#2}}
-\newcommand{\ddd}[2]{\frac{\mathrm{d}#1}{\mathrm{d}#2}}
+\newcommand{\ddd}[2]{\frac{\mathrm{d^2}#1}{\mathrm{d}#2^2}}
 \newcommand{\dpart}[2]{\frac{\partial#1}{\partial#2}}
 \newcommand{\dpartt}[2]{\frac{\partial^2#1}{\partial#2^2}}
 \newcommand{\qqq}{\qquad\qquad\qquad}
@@ -70,14 +70,39 @@ where $\dpart{u}{n}$ is the derivative in the direction normal to the boundary.
 \subsection*{Discretization}
 The numerical wave equation can be discretized with
 \begin{align*}
-\Big[D_{tt} u\Big]_{i,j}^n + b\Big[D_tu\Big]_{i,j}^{n+\f{1}{2}} = \Big[D_x [\bar q^x][D_x u]\Big]^n_{i+\f{1}{2},j} + \Big[D_y [\bar q^y][D_y u]\Big]^n_{i,j+\f{1}{2}}
+\Big[D_tD_t u + bD_{2t}u = D_x  q[D_x u] + D_y q [D_y u]\Big]^n_{i,j}
 \end{align*}
-%We use the standard approximation for the second derivative and the centered difference method f%or the first derivative in time, and a double centered difference in the position derivatives
-%\begin{align*}
-%\f{u^{n+1}_{i,j} + u^{n-1}_{i,j} - 2u^{n}_{i,j}}{\Delta t^2} + b\f{u^{n+1}_{i,j}-u^{n-1}_{i,j}}{2\Delta t}\\
-%= \f{1}{\Delta x}\Bigg(
-%\end{align*}
-
+This evaluates to
+\begin{align*}
+\text{L.H.S. } & = \f{u^{n+1}_{i,j} + u^{n-1}_{i,j} - 2u^{n}_{i,j}}{\Delta t^2} + b\f{u^{n+1}_{i,j}-u^{n-1}_{i,j}}{2\Delta t}\\
+\text{R.H.S. } & = \f{1}{\Delta x}\Bigg(q_{i+\f{1}{2},j}\Bigg[\f{u^n_{i+1,j} - u^n_{i,j}}{\Delta x}\Bigg]
+- q_{i-\f{1}{2},j}\Bigg[\f{u^n_{i,j} - u^n_{i-1,j}}{\Delta x}\Bigg]\Bigg)\\
+&+\f{1}{\Delta y}\Bigg(q_{i,j+\f{1}{2}}\Bigg[\f{u^n_{i,j+1} - u^n_{i,j}}{\Delta y}\Bigg]
+- q_{i,j-\f{1}{2}}\Bigg[\f{u^n_{i,j} - u^n_{i,j-1}}{\Delta y}\Bigg]\Bigg)
+\end{align*}
+This can be solved for $u_{i,j}^{n+1}$ and we can easily evolve the system in time. We notice that to calculate for timestep $n+1$, we need both timesteps $n$ and $n-1$ because of the second derivative in time. This gives the requirement of both $u(x,y,t=0) = I(x,y)$ and $u(x,y,t+\Delta t)$ in order to evolve in time. There are two standard ways to calculate the second timestep. If we have the initial condition $\dpart{u}{t}|_{t=0}=0$, we apply the forward difference scheme
+\begin{align*}
+\f{u^{+1}_{i,j} - u^{0}_{i,j}}{\Delta t} = 0\\
+\end{align*}
+which gives
+\begin{align*}
+u^{+1}_{i,j} = u^{0}_{i,j}
+\end{align*}
+for all $i,j$. If we have the more complicated and general case where $\dpart{u}{t}|_{t=0} = V(x,y)$, we can use the centered difference scheme 
+\begin{align*}
+\f{u^{+1}_{i,j} - u^{-1}_{i,j}}{2\Delta t} = V(x,y)\\
+\end{align*}
+which gives
+\begin{align*}
+u^{-1}_{i,j} = u^{+1}_{i,j} + V_{i,j}
+\end{align*}
+where we evaluate $V_{i,j} = V(x_i,y_j)$. We can again solve the equation for $u_{i,j}^{+1}$ by using only one timestep.
+\subsection*{Boundary conditions}
+We apply the centered difference scheme on $\dpart{u}{n}$, assuming that the normal vector is in either the $x$ or $y$-direction
+\begin{align*}
+\dpart{u}{x} = 0 = \f{u^n_{i+1,j} - u^n_{i-1,j} }{ 2\Delta x}
+\end{align*}
+where we have equality because we define the right hand side this way. We implement this by defining a 
 \section*{Verification}
 \subsection*{Constant solution}
 \subsection*{Exact 1D solution}
