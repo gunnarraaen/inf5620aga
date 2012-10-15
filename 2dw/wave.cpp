@@ -32,8 +32,8 @@ int main(int argc, char** argv)
     Ly = 4;
     b = 0.01;
     dt = 0.001;
-    dx = 0.01;
-    dy = 0.01;
+    dx = 0.08;
+    dy = 0.08;
     // cmd line override
     if (argc==2) T = atof(argv[1]);
 
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
             }
         }
         E = 0;
-        #pragma omp parallel for
+    #pragma omp parallel for
         for (int i=0; i<Nx; i++) {
             for (int j=0; j<Ny; j++) {
                 ulast(i,j) = u(i,j);

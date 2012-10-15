@@ -57,10 +57,10 @@
 %\usepackage{wrapfig}
 \usepackage{epstopdf}
 
-\title{Project 5 - balle}
+\title{Project 1 - INF5620}
+
 \date{\today}
 \author{Kand. Nr. 31}
-% \lstinputlisting{blackhole.py}
 
 \newenvironment{changemargin}[2]{%
  \begin{list}{}{%
@@ -250,36 +250,53 @@ This implies that the nested space loop is embarrassingly parallel. In OpenMP, t
 for (int n=1; n<Nt; n++) {
     // space loops
     #pragma omp parallel for
-    for (int i=0; i<Nx; i++)
-	for (int j=0; j<Ny; j++)
+    for (int i=0; i<Nx; i++) // <-- this is parallelized
+	for (int j=0; j<Ny; j++) // < -- all threads run this loop
 	    unext(i,j) = ... something only dep. on n-1 ...
 }
 \end{lstlisting}
-This code forks the outer space loop into N threads, where N is the number of CPU cores. The threads eavenly (if possible) divide the i interval [0,Nx) into N intervals and runs the i-loop for these values of i.
+This code forks the outer spatial loop into $N_{\rm cores}$ threads, where $N_{\rm cores}$ is the number of CPU cores. The threads eavenly (if possible) divide the i interval [0,Nx) into $N_{\rm cores}$ intervals and runs the i-loop for these values of i.
 At the end of the i-loop, the threads terminate and only the master thread continues execution. Since all threads share the same memory, the variables (declared before the loop) used by all threads are the same.
 We could also only parallelize the innermost loop (i.e. the j-loop), but this would probably decrease the efficiency since the threads would be created and killed for each iteration i, 
 thus creating more overhead.
 
 \subsection{Speedtests}
 
-To check the efficiency of the parallelized code, we try a few runs with and without parallelization. First we set the spatial dimensions somewhat high, $400 \times 400$. The results are
+To check the efficiency of the parallelized code, we try a few runs with and without parallelization. We use the following spatial domains: $50 \times 50$, $100 \times 100$, $400 \times 400$. The results are (in seconds)
+\begin{center}
+   \begin{tabular}{| c || l | l | | l|}
+    \hline 
+    \# cores & 50x50 & 100x100 & 400x400 \\ \hline \hline
+    1 & 0.89 & 3.54 & 57.1 \\ \hline 
+    4 & 0.5 & 0.97 & 15.3\\ \hline  \hline 
+    Ratio & 1.8 & 3.65 & 3.73 \\ \hline
+   \end{tabular}
+\end{center}
+If the entire algorithm was completely parallelizable the ratio has a theoretical maximum ratio of $N_{\rm cores}$. We can see that the parallel code is about $3.7$ times faster. This makes sense, since the time loop
+has not been touched. Also, we can see that the ratio falls with decreasing spatial domain size, which is probably due to increased overhead from thread creation/destruction compared to the gain from parallelization.
+Larger spatial domain should increase the ratio further.
+\section{Error convergance}
+We are given an exact solution to the 2d wave equation (1) in the project text. In this section, we study the numerical approximation of this solution. All the derivations of $I(x,y)$, $V(x,y)$ and $f(x,y,t)$ are
+given in TODO. 
 
-\begin{table}[position specifier]
-\centering
-\begin{tabular}{l| l| l}
-\# cores & 1 & 4 \\
-time[s] & 57 & 15.3 
-\end{tabular}
-\label{tab:table1}
-\end{table}
-and with $100 \times 100$
-\begin{table}[position specifier]
-\centering
-\begin{tabular}{l l l}
-\# cores & 1 & 4 \\
-time[s] & 3.54 & 0.97
-\end{tabular}
-\label{tab:table1}
-\end{table}
-
+There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta t$. We take $\Delta x = \Delta y \equiv h$ and $\Delta
+t \ll h$ to ensure that the temporal error is not changed for different $h$. To calculate the error we used that for a given n (timestep)
+\begin{align*}
+ E = h^2 \sqrt{\sum_{i,j}(u_{i,j} - u^{\rm exact}_{i,j})^2}.
+\end{align*}
+We expect that $E/h^2$ to constant. 
+\subsection{Tests}
+Firstly, we set $h=0.0001$. Then we vary $h$ from $h_0 \equiv 0.08$ to $h_0/16 = 0.005$. The results are shown in table TODO
+\begin{center}
+   \begin{tabular}{| l || l | l|}
+    \hline 
+    $h$ & E & $E/h^2$ \\ \hline \hline
+    $h_0 $ & 0.0176 & 2.75\\ \hline 
+    $h_0/2$ & 0.00427 & 2.69\\ \hline 
+    $h_0/4$ & 0.00104 & 2.6 \\ \hline 
+    $h_0/8$ & 0.000247 & 2.47 \\ \hline 
+    $h_0/16$ & 0.000114 & 4.56\\ \hline 
+    
+   \end{tabular}
+\end{center}
 \end{document}
