@@ -6,20 +6,16 @@
 using namespace std;
 using namespace boost::numeric::ublas;
 
-double T, Lx, Ly, dt;
-//double b;
+// global variables used for simplification
 int Nx,Ny,Nt;
-double dx, dy;
-double ddx, ddy, ddt;
+double T, dt, dx, dy, ddx, ddy, ddt;
 double(*c)(double x, double y);
 double(*source)(double x, double y,double t);
 double(*initc)(double x, double y);
 double(*V)(double x, double y);
-//double deltaDiffB(int i1, int i, int i_1, int j1, int j, int j_1, int n, matrix<double> *uc);
-//void diff(matrix<double> *u,matrix<double> *uc,matrix<double> *ul, double a, double b, double c,int n);
-double diff_2(int i, int j, int n, matrix<double> *uc, matrix<double> *ul);
+// prototypes
 double RHS(int i, int j, int n, matrix<double> * uc);
-double firstStep(int i, int j, int n, matrix<double> *uc);
+
 int main(int argc, char** argv)
 {
     stringstream str;
@@ -27,13 +23,13 @@ int main(int argc, char** argv)
 
     // Input parameters ----->
     T = 1;
-    write_delay = 100;
+    write_delay = 10;
     Lx = 4;
     Ly = 4;
     b = 0.01;
     dt = 0.001;
-    dx = 0.08;
-    dy = 0.08;
+    dx = 0.04;
+    dy = 0.04;
     // cmd line override
     if (argc==2) T = atof(argv[1]);
 
@@ -44,19 +40,15 @@ int main(int argc, char** argv)
     V = &exact_V;
     // <----------------------
 
-    ddx = dx*dx;
-    ddy = dy*dy;
-    ddt = dt*dt;
+    ddx = dx*dx; ddy = dy*dy; ddt = dt*dt;
     Nx = (int) ceil(Lx/dx);
     Ny = (int) ceil(Ly/dy);
     Nt = (int) ceil(T/dt);
     matrix<double> u(Nx,Ny);
     matrix<double> unext(Nx,Ny);
     matrix<double> ulast(Nx,Ny);
-    matrix<double> exact(Nx,Ny);
-    matrix<double> error(Nx,Ny);
 
-    double E;
+    double E, u_exact;
     for (int i=0; i<Nx; i++) {
         for (int j=0; j<Ny; j++) {
             u(i,j) = 0;
@@ -64,44 +56,40 @@ int main(int argc, char** argv)
             ulast(i,j) = initc(dx*i,dy*j);
         }
     }
-    // n = 0 step (first time step)
+    // n = 0 step (first timestep)
     #pragma omp parallel for
-    for (int i = 0; i<Nx ;i++) {
-        for (int j=0; j<Ny; j++) {
-            u(i,j) = ulast(i,j) + dt*V(i*dx,j*dy)*(1-b*dt/2) + 0.5*RHS(i,j,0,&ulast)*ddt;
-            //exact(i,j) = exact_sol(i*dx,j*dy,0);
-        }
-    }
+    for (int i = 0; i<Nx ;i++)
+        for (int j=0; j<Ny; j++)
+            u(i,j) = ulast(i,j) + dt*V(i*dx,j*dy)*(1-b*dt/2.) + 0.5*RHS(i,j,0,&ulast)*ddt;
+
     // time loop
     for (int n=1; n<Nt; n++) {
-    #pragma omp parallel for
-        for (int i=0; i<Nx; i++) {
-            for (int j=0; j<Ny; j++) {
+        // calc. next step
+        #pragma omp parallel for
+        for (int i=0; i<Nx; i++)
+            for (int j=0; j<Ny; j++)
                 unext(i,j) = (1/(1+b*dt/2.))*( 2*u(i,j) - ulast(i,j)*(1-b*dt/2.) + RHS(i,j,n,&u)*ddt);
-                //exact(i,j) = exact_sol(i*dx,j*dy,n*dt);
-            }
-        }
         E = 0;
-    #pragma omp parallel for
+        // update matrices
+        #pragma omp parallel for
         for (int i=0; i<Nx; i++) {
             for (int j=0; j<Ny; j++) {
                 ulast(i,j) = u(i,j);
                 u(i,j) = unext(i,j);
-                //error(i,j) = u(i,j) - exact(i,j);
-                //E += (u(i,j) - exact(i,j))*(u(i,j) - exact(i,j));
+                // calc. error
+                u_exact =  exact_sol(i*dx,j*dy,n*dt);
+                E += (ulast(i,j) - u_exact)*(ulast(i,j) - u_exact);
             }
         }
         E = dx*dy*sqrt(E);
-
+        // print data
         if (n % write_delay == 0) {
             str.str(std::string(""));
             str << "test.d" << padnumber(n/write_delay,'0');
-            //print_matrix(Nx,Ny,&u,str.str().c_str(),1);
-            // print error
-            //cout << "E: " << E << endl;
+            print_matrix(Nx,Ny,&u,str.str().c_str(),1);
+            cout << n*dt << ": error = " << E << endl;
         }
-        // cout << "E: " << E << endl;
-    }
+    } // end: time loop
 
     return 0;
 }
@@ -112,6 +100,7 @@ double RHS(int i, int j, int n, matrix<double> * uc)
     if (j_1 < 0) j_1 = j1;
     if (i1 > Nx-1) i1 = i_1;
     if (j1 > Ny-1) j1 = j_1;
-    return source(i*dx,j*dy,n*dt) + (1/ddx)*(  c((i+0.5)*dx,j*dy)*((*uc)(i1,j) - (*uc)(i,j)) - c((i-0.5)*dx,j*dy)*((*uc)(i,j) - (*uc)(i_1,j)) )
-                                  + (1/ddy)*(  c(i*dx,(j+0.5)*dy)*((*uc)(i,j1) - (*uc)(i,j)) - c(i*dx,(j-0.5)*dy)*((*uc)(i,j) - (*uc)(i,j_1)) );
+    return (1/ddx)*( c((i+0.5)*dx,j*dy)*((*uc)(i1,j) - (*uc)(i,j)) - c((i-0.5)*dx,j*dy)*((*uc)(i,j) - (*uc)(i_1,j)) ) +
+           (1/ddy)*( c(i*dx,(j+0.5)*dy)*((*uc)(i,j1) - (*uc)(i,j)) - c(i*dx,(j-0.5)*dy)*((*uc)(i,j) - (*uc)(i,j_1)) ) +
+           source(i*dx,j*dy,n*dt);
 }
