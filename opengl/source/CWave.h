@@ -7,6 +7,7 @@
 #include <AObject.h>
 #include <CWaveShader.h>
 #include <RainDrop.h>
+#include <COpenGL.h>
 
 using namespace std;
 

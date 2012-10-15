@@ -68,11 +68,15 @@ When the wave hits an object, i.e. a wall, we use the boundary condition
 where $\dpart{u}{n}$ is the derivative in the direction normal to the boundary. 
 \section*{Numerical implementation}
 \subsection*{Discretization}
-We use the standard approximation for the second derivative and the centered difference method for the first derivative in time, and a double centered difference in the position derivatives
+The numerical wave equation can be discretized with
 \begin{align*}
-\f{u^{n+1}_{i,j} + u^{n-1}_{i,j} - 2u^{n}_{i,j}}{\Delta t^2} + b\f{u^{n+1}_{i,j}-u^{n-1}_{i,j}}{2\Delta t}\\
-= \f{1}{\Delta x}\Bigg(
+\Big[D_{tt} u\Big]_{i,j}^n + b\Big[D_tu\Big]_{i,j}^{n+\f{1}{2}} = \Big[D_x [\bar q^x][D_x u]\Big]^n_{i+\f{1}{2},j} + \Big[D_y [\bar q^y][D_y u]\Big]^n_{i,j+\f{1}{2}}
 \end{align*}
+%We use the standard approximation for the second derivative and the centered difference method f%or the first derivative in time, and a double centered difference in the position derivatives
+%\begin{align*}
+%\f{u^{n+1}_{i,j} + u^{n-1}_{i,j} - 2u^{n}_{i,j}}{\Delta t^2} + b\f{u^{n+1}_{i,j}-u^{n-1}_{i,j}}{2\Delta t}\\
+%= \f{1}{\Delta x}\Bigg(
+%\end{align*}
 
 \section*{Verification}
 \subsection*{Constant solution}

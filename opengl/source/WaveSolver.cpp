@@ -2,6 +2,7 @@
 #include <CWave.h>
 #include <CIniFile.h>
 #include <CVector.h>
+
 #include <time.h>
 // Mods the index on system size
 inline int WaveSolver::idx(int i) {
@@ -102,7 +103,31 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 
 	// Read in the ground info from bmp file
 	// The values can be adjusted and scaled in the wave.ini
-	ground = readBMP((char*)ini.getstring("ground_file").c_str());
+	// ground = readBMP((char*)ini.getstring("ground_file").c_str());
+	ground = zeros<mat>(Nr,Nr);
+
+	// oktav, frekvens, amplitude , seed
+	Perlin p(1, 1, 1, 3);
+
+	for (int i=0;i<Nr; i++)
+		for (int j=0;j<Nr; j++) {
+
+			double xx = (i-Nr/2)/(double)Nr + 100;
+			double yy = (j-Nr/2)/(double)Nr;
+			float s = 1.0;
+
+			double val = 0;
+			for (int k=0; k<25;k++) {
+				s = 4*k +1;
+				val+=(p.Get(xx*s,yy*s)/(s*sqrt(s)));
+				// 
+			}
+			ground(i,j) = val + 0.5;
+	}
+
+
+
+
 	ground -= 0.8;
 	ground *= 1.0/0.8;
 

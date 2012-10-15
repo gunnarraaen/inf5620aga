@@ -7,6 +7,7 @@ class CWave;
 #include <COpenGL.h>
 #include <CIniFile.h>
 #include <AObject.h>
+#include <Perlin.h>
 
 using namespace arma;
 

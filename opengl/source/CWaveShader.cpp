@@ -12,6 +12,8 @@ void CWaveShader::Start() {
 
   Shader->sendUniform3f((char*)"lightpos",lightpos.x, lightpos.y, lightpos.z);
 
+  Shader->sendUniform3f((char*)"targetdir",targetdir.x, targetdir.y, targetdir.z);
+
 }
 
 void CWaveShader::End() {
@@ -22,6 +24,7 @@ void CWaveShader::End() {
 CWaveShader::CWaveShader() {
   vert = string(
   	"uniform vec3 lightpos; \n"
+  	"uniform vec3 targetdir; \n"
 	"varying vec3 normal; \n"
 	"varying vec3 myPos; \n"
 	"void main(void) \n"
@@ -35,6 +38,7 @@ CWaveShader::CWaveShader() {
  
   frag = string(
   	"uniform vec3 lightpos; \n"
+  	"uniform vec3 targetdir; \n"
 	"varying vec3 normal; \n"
 	"varying vec3 myPos; \n"
 	"void main(void)\n"
@@ -42,7 +46,9 @@ CWaveShader::CWaveShader() {
 	// "  vec4 val = vec4(0.2,myPos.z*10.0,1.0,1.0);"
 	"  vec4 val = vec4(0.2,0.25,1.0,1.0);"
 	"  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);"
-	"  gl_FragColor = val*light; \n"
+	"  float shininess = 40.0;"
+	"  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+	"  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
 	"  gl_FragColor.w = 0.7;"
 	"}\n");
 }
@@ -58,6 +64,8 @@ void CGroundShader::Start() {
 
   Shader->sendUniform3f((char*)"lightpos",lightpos.x, lightpos.y, lightpos.z);
 
+  Shader->sendUniform3f((char*)"targetdir",targetdir.x, targetdir.y, targetdir.z);
+
 }
 
 void CGroundShader::End() {
@@ -68,6 +76,7 @@ void CGroundShader::End() {
 CGroundShader::CGroundShader() {
   vert = string(
   	"uniform vec3 lightpos; \n"
+  	"uniform vec3 targetdir; \n"
 	"varying vec3 normal; \n"
 	"varying vec3 myPos; \n"
 	"void main(void) \n"
@@ -81,6 +90,7 @@ CGroundShader::CGroundShader() {
   frag = string(
   	"uniform vec3 lightpos; \n"
 	"varying vec3 normal; \n"
+  	"uniform vec3 targetdir; \n"
 	"varying vec3 myPos; \n"
 	"void main(void)\n"
 	"{\n "
@@ -89,7 +99,9 @@ CGroundShader::CGroundShader() {
 	"      val = vec4(10.0*(myPos.z-1.0),10.0*(myPos.z-1.0),10.0*(myPos.z-1.0),1.0);"
 	"  }                  "
 	"  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);"	
-	"  gl_FragColor = val*light; \n"
+	"  float shininess = 100.0;"
+	"  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+	"  gl_FragColor = val*light + vec4(1,1,1,1)*specular; \n"
 	"  gl_FragColor.w = 1.0;"
 	"}\n");
 

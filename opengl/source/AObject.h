@@ -1,6 +1,7 @@
 #pragma once
 #include <CVector.h>
 #include <vector>
+#include <COpenGL.h>
 #include <armadillo>
 using namespace std;
 using namespace arma;
@@ -13,6 +14,10 @@ public:
 	vector<int> faces;
 
 	void calculateNormal(vector<AFace> &faceList);
+	void renderVertex() {
+		glNormal3f(normal.x, normal.y, normal.z);
+		glVertex3f(pos.x, pos.y, pos.z);
+	}
 };
 
 class AFace {
@@ -25,6 +30,16 @@ public:
 		CVector& p2 = v[face[1]].pos;
 		CVector& p3 = v[face[2]].pos;
 		normal = (p3-p1).Cross(p2-p1).Normalize();
+	}
+
+};
+
+class AQuadPoint {
+	public:
+	vector<CVector> points;
+	CVector center;
+	AQuadPoint() {
+		points.resize(4);
 	}
 
 };
@@ -44,6 +59,8 @@ public:
 	void RenderTriangles();
 	void calculateGridFaceNormals();
 	void calculateGridVertexNormals();
+
+	void renderAsQuad(double size, int lod, AQuadPoint qp, CVector camera);
 	AVertex* getGridPos(const int i, const int j);
 
 };

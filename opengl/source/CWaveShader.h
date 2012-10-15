@@ -10,6 +10,7 @@ class CWaveShader : public CShaderParent {
   CWaveShader();  
 
   CVector lightpos; 
+  CVector targetdir; 
 
   void Initialize(string);
   void Start();
@@ -22,6 +23,7 @@ class CGroundShader : public CShaderParent {
   CGroundShader();  
 
   CVector lightpos; 
+  CVector targetdir; 
 
   void Initialize(string);
   void Start();
