@@ -46,6 +46,7 @@ public:
     // internal stuff
 private:    
     static void renderWave();
+    static void step();
     static void renderGround();
     static void renderWalls();
     static void RenderWall(int i,int j, int di, int dj);

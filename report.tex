@@ -12,6 +12,8 @@
 \usepackage{url}
 
 \newcommand{\differential}[2]{\frac{\mathrm{d}#1}{\mathrm{d}#2}}
+\newcommand{\dpart}[2]{\frac{\partial#1}{\partial#2}}
+\newcommand{\dpartt}[2]{\frac{\partial^2#1}{\partial#2^2}}
 \newcommand{\qqq}{\qquad\qquad\qquad}
 \newcommand{\f}[2]{\frac{#1}{#2}}
 \newcommand{\bs}[1]{$\boldsymbol #1$}
@@ -69,7 +71,32 @@ We use the standard approximation for the second derivative and the centered dif
 \subsection*{Constant solution}
 \subsection*{Exact 1D solution}
 \subsection*{Standing wave}
-\subsection*{Manufactured solution}
+By assuming a constant wave velocity $q(x,y)=k$, a solution to the equation is the standing wave
+\begin{align*}
+u(x,y,t) &= \exp(-bt)\cos\Big(\f{m_xx\pi}{L_x}\Big)\cos\Big(\f{m_yy\pi}{L_y}\Big)\cos{\omega t}\\
+&= \exp(-bt)\cos k_x x\cos k_y y\Big)\cos{\omega t}
+\end{align*}
+for arbitrary integers $m_x$, $m_y$ and frequency $\omega$. This solution gives a rather messy source term $f(x,y,t)$, but it's trivial to calculate. We rewrite the solution to $u(x,y,t) = T(t)\cdot R(x,y)=T(t)\cdot X(x) \cdot Y(y)$
+\begin{align*}
+b\dpart{T}{t} &= -e^{-bt}(b^2\cos \omega t + b\omega \sin \omega t)\\
+\dpartt{T}{t} &= e^{-bt}\Big[(b^2 - \omega^2)\cos\omega t + 2b\omega\sin\omega t\Big] \\
+\dpartt{X}{x} &= - \Big(\f{m_x \pi}{L_x}\Big)^2 X(x)
+\end{align*}
+The left hand side of the wave equation now reads
+\begin{align*}
+e^{-bt}R(x,y)&\Big[ (b^2 - \omega^2)\cos\omega t + 2b\omega\sin\omega t -b^2\cos \omega t - b\omega \sin \omega t \Big]\\
+& = e^{-bt}R(x,y)\Big[-\omega^2\cos\omega t + b\omega\sin\omega t\Big]\\
+& = u(x,y,t)\Big[-\omega^2 + b\omega\tan\omega t\Big]
+\end{align*}
+Which gives
+\begin{align*}
+u(x,y,t)\Big[-\omega^2 + b\omega\tan\omega t\Big] = -q\Big[ \Big(\f{m_x \pi}{L_x}\Big)^2 + \Big(\f{m_y \pi}{L_y}\Big)^2 \Big]u(x,y,t) + f(x,y,t)
+\end{align*}
+We can solve this for the source term
+\begin{align*}
+f(x,y,t) &= u(x,y,t)\Big[ k - \omega^2 + b\omega \tan\omega t\Big]
+\end{align*}
+
 \section*{Applications}
 \subsection*{Tsunami}
 In addition to what HPL says (ex 14), check out project 4 from FYS3150 in 2008:\\
@@ -79,6 +106,9 @@ In addition to what HPL says (ex 14), check out project 4 from FYS3150 in 2008:\
 \subsection*{Double slit}
 
 \section*{Visualization}
+\subsection*{MayaVi}
+\subsection*{OpenGL}
+
 
 
 \end{document}

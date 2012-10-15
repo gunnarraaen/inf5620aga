@@ -33,6 +33,8 @@ public:
 	double r_max;
 	double max_value;
 	double avg_u;
+	int mx,my;
+	double Lx,Ly,omega;
 	
 	WaveSolver() {}
 	WaveSolver(CIniFile &ini);
@@ -41,6 +43,7 @@ public:
 	void calculateWalls();
 	void calculateMean();
 	void createRandomGauss();
+	void calculateSource();
 	void copyToGrid(AObject& grid);
 	double u(int i,int j, int di=0, int dj=0);
 	double uprev(int i,int j, int di=0, int dj=0);

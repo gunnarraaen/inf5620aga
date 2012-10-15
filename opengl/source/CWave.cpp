@@ -9,14 +9,9 @@ void CWave::Update(void) {
     glutPostRedisplay();
     InternalUpdate();
     Events();
-    
+
     for(int i=0;i<var.speed;i++)  {
-        if(var.raindrops_enabled) {
-            createRainDrops();
-            moveRainDrops();
-        }
-        
-        var.solver.step();
+        step();
     }
 }  
 
@@ -52,7 +47,7 @@ void CWave::Display (void) {
 
 void CWave::Initialize_() {
     var.solver = WaveSolver(ini);
-    var.speed = 2;
+    var.speed = 0;
     var.theta = 3*M_PI/2;
     var.cam_radius  = 2.0;
     var.waveGrid.InitializeGrid(ini.getint("grid_size"),2.0);
@@ -74,6 +69,15 @@ void CWave::Initialize_() {
 
     Initialized = true;
 }  
+
+void CWave::step() {
+    if(var.raindrops_enabled) {
+        createRainDrops();
+        moveRainDrops();
+    }
+    
+    var.solver.step();
+}
 
 void CWave::moveRainDrops() {
     // for (iter = var.raindrops.begin(); iter != var.raindrops.end();) {
@@ -202,6 +206,8 @@ void CWave::Events ()  {
     bool go = true;
     if (key==27)
         exit(1);
+    if (key=='0')
+        var.speed = 0;
     if (key=='1')
         var.speed = 1;
     if (key=='2')
@@ -232,6 +238,10 @@ void CWave::Events ()  {
         var.theta -= 0.05;
     if (key=='d')
         var.theta += 0.05;
+    if (key=='s') {
+        var.speed = 0;
+        step();
+    }
     if(key==' ')
         var.solver.createRandomGauss();
     if (key=='+') {
@@ -245,6 +255,6 @@ void CWave::Events ()  {
     if (key=='t')
         var.render_shader = !var.render_shader;
 
-    key = '0';
+    key = '<';
 
 }
