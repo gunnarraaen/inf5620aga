@@ -28,8 +28,6 @@ inline double WaveSolver::uprev(int i,int j, int di, int dj) {
 
 // Gives the c-value in the point i,j
 inline double WaveSolver::calcC(int i, int j) {
-	return 1.0;
-
 	i=(i+10*Nr)%Nr;
 	j=(j+10*Nr)%Nr;
 
@@ -68,9 +66,6 @@ void WaveSolver::calculateWalls() {
 	int old_val;
 	for(int i=0;i<Nr;i++) {
 		for(int j=0;j<Nr;j++) {
-			walls(i,j) = 0;
-			continue;
-
 			old_val = walls(i,j);
 			walls(i,j) = ground(i,j) > avg_u;
 			if(old_val != walls(i,j)) {
@@ -81,7 +76,6 @@ void WaveSolver::calculateWalls() {
 }
 
 void WaveSolver::createRandomGauss() {
-
 	double _x, _y;
 	double x0 = r_min + (r_max-r_min)*rand()/(double)RAND_MAX;
 	double y0 = r_min + (r_max-r_min)*rand()/(double)RAND_MAX;
@@ -154,10 +148,10 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 		for(int j=0;j<Nr;j++) {
 			y(j) = r_min+j*dr; 
 
-			_x = x(i); 					// The x- and y-center can have an offset
-			_y = y(j);
+			_x = x(i)+x0; 					// The x- and y-center can have an offset
+			_y = y(j)+y0;
 
-			u_prev(i,j) = 0.2*cos(mx*M_PI*_x/Lx)*cos(my*M_PI*_y/Ly);
+			u_prev(i,j) = exp(-(pow(_x,2)+pow(_y,2))/(2*stddev*stddev));
 			u_(i,j)     = u_prev(i,j);
 			
 			max_value = max(max_value,abs(u_(i,j)));
@@ -166,24 +160,16 @@ WaveSolver::WaveSolver(CIniFile &ini) {
 
 	// Normalize these to the amplitude we have chosen in ini
 	double amplitude = ini.getdouble("amplitude");
-	// u_prev *= amplitude/max_value;
-	// u_ *= amplitude/max_value;
-	// max_value = amplitude;
+	u_prev *= amplitude/max_value;
+	u_ *= amplitude/max_value;
+	max_value = amplitude;
 
 	calculateWalls();
 	calculateMean();
 }
 
 void WaveSolver::calculateSource() {
-	for(int i=0;i<Nr;i++) {
-		for(int j=0;j<Nr;j++) {
-			source(i,j) = exp(-dampingFactor*t)*(
-				cos(mx*M_PI*x(i)/Lx)*cos(my*M_PI*y(i)/Ly)
-				*(-omega*omega*cos(omega*t)+dampingFactor*omega*sin(omega*t)) 
-				+calcC(i,j)*cos(omega*t)*( mx*mx*M_PI*M_PI/(Lx*Lx)*cos(mx*M_PI*x(i)/Lx)
-				+ my*my*M_PI*M_PI/(Ly*Ly)*cos(my*M_PI*y(i)/Ly) ) );
-		}
-	}
+	return;
 }
 
 void WaveSolver::step() {
@@ -192,7 +178,7 @@ void WaveSolver::step() {
 	double cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest; 		// Temp variables for speed'n read
 	double factor = 1.0/(1+0.5*dampingFactor*dt);
 	int i,j;
-	calculateSource();
+	// calculateSource();
 
 	#pragma omp parallel for private(cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest,i,j) num_threads(1)
 	for(i=0;i<Nr;i++) {

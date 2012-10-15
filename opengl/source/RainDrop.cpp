@@ -9,6 +9,6 @@ RainDrop::RainDrop(int _i, int _j, double _z) {
 void RainDrop::render(vec &x, vec &y) {
 	glPushMatrix();
 	glTranslatef(x(i),y(j),z);
-	glutSolidSphere(0.01, 4, 4);
+	glutSolidSphere(0.005, 4, 4);
 	glPopMatrix();
 }

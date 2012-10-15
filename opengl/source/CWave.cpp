@@ -92,9 +92,7 @@ void CWave::moveRainDrops() {
 }
 
 void CWave::createRainDrops() {
-    if((rand()%20)) return;
-
-    for(int i=0;i<1;i++) {
+    for(int i=0;i<5;i++) {
         double x = rand() % var.solver.Nr;
         double y = rand() % var.solver.Nr;
         double z = 0.5;
