@@ -1,16 +1,23 @@
-\documentclass{article}
-
-\usepackage[T1]{fontenc}
-%\usepackage[norwegian]{babel}
+\documentclass[a4paper,10pt]{article}
+%\usepackage[latin1]{inputenc}
+%\usepackage[english]{babel}
 \usepackage{graphicx}
+\usepackage{graphics}
+\usepackage{enumerate}
+\usepackage{fullpage}
 \usepackage{amsmath}
 \usepackage{amsfonts}
-\usepackage{color}
-\usepackage{listings}
-\usepackage{algorithm}
-\usepackage{algorithmic}
-\usepackage{url}
+\usepackage{hyperref}
+\usepackage{ifsym}
+\usepackage{parskip}
+\usepackage[numbers,sectionbib]{natbib}
 
+% Egne kommandoer for enklere vektornotasjon
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\renewcommand{\(}{\left(}
+\renewcommand{\)}{\right)}
+%\renewcommand{\>}{\right>}
+%\renewcommand{\<}{\left<}
 \newcommand{\dd}[2]{\frac{\mathrm{d}#1}{\mathrm{d}#2}}
 \newcommand{\ddd}[2]{\frac{\mathrm{d^2}#1}{\mathrm{d}#2^2}}
 \newcommand{\dpart}[2]{\frac{\partial#1}{\partial#2}}
@@ -19,32 +26,86 @@
 \newcommand{\f}[2]{\frac{#1}{#2}}
 \newcommand{\bs}[1]{$\boldsymbol #1$}
 \newcommand{\bsa}[1]{\boldsymbol #1}
-
-\lstset{keywordstyle=\color{Red},%\bfseries,
-    basicstyle=\small\ttfamily,
-    %identifierstyle=\color{NavyBlue},
-    commentstyle=\color{Red}\ttfamily,
-    stringstyle=\rmfamily,
-    %numbers=none,%left,%
-    %numberstyle=\scriptsize,%\tiny
-    %stepnumber=5,
-    numbersep=8pt,
-    %showstringspaces=false,
-    breaklines=true,
-    %frameround=ftff,
-    frame=single
-    frame=L
+\usepackage{listings}
+\usepackage{color}
+\usepackage{textcomp}
+\definecolor{listinggray}{gray}{0.9}
+\definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
+\lstset{
+ backgroundcolor=\color{white},
+ tabsize=4,
+ rulecolor=,
+ language=c++, 
+ basicstyle=\scriptsize,
+ upquote=true,
+ aboveskip={1.5\baselineskip},
+ columns=fixed,
+ showstringspaces=false,
+ extendedchars=true,
+ breaklines=true,
+ prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+ frame=single,
+ showtabs=false,
+ showspaces=false,
+ showstringspaces=false,
+ identifierstyle=\ttfamily,
+ keywordstyle=\color[rgb]{0,0,1},
+ commentstyle=\color[rgb]{0.133,0.545,0.133},
+ stringstyle=\color[rgb]{0.627,0.126,0.941},
 }
+\usepackage{subfig}
+%\usepackage{wrapfig}
+\usepackage{epstopdf}
 
+\title{Project 5 - Diffusion - FYS3150}
+\date{\today}
+\author{Kand. Nr. 31}
+% \lstinputlisting{blackhole.py}
+
+\newenvironment{changemargin}[2]{%
+ \begin{list}{}{%
+ %\setlength{\topsep}{0pt}%
+ \setlength{\leftmargin}{#1}%
+ \setlength{\rightmargin}{#2}%
+ %\setlength{\listparindent}{\parindent}%
+ %\setlength{\itemindent}{\parindent}%
+ %\setlength{\parsep}{\parskip}%
+ }%
+ \item[]}{\end{list}}
+ 
+ \newcommand{\maxFigure}[4]{
+ \begin{figure}[htp!]
+ \begin{changemargin}{-3cm}{-1cm}
+ \begin{center}
+ %\includegraphics[width=\paperwidth + 3cm,height=\paperheight,keepaspectratio]{#2}
+ \includegraphics[scale = #2]{#3}
+ \end{center}
+ \end{changemargin}
+\vspace{-10pt}
+  \caption{\textit{#1} }
+  \label{#4}
+ \end{figure}
+ }
+ 
+ \makeatletter
+ \setlength{\abovecaptionskip}{6pt}   % 0.5cm as an example
+\setlength{\belowcaptionskip}{6pt}   % 0.5cm as an example
+% This does justification (left) of caption.
+\long\def\@makecaption#1#2{%
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{#1: #2}%
+  \ifdim \wd\@tempboxa >\hsize
+    #1: #2\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\box\@tempboxa\hfil}%
+  \fi
+  \vskip\belowcaptionskip}
+\makeatother
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOCUMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
-
-\author{Andreas Våvang Solbrå\\Gunnar Raaen\\Anders Hafreager}
-\title{INF5620 - a numerical analysis of the two dimensional wave equation}
-\maketitle
-\newpage
-
-\section*{Abstract}
-The two dimensional wave equation can be used to model many interesting problems such as electromagnetic waves and tsunami waves. We create a numerical solver based on an explicit scheme.
 \section*{Theory}
 The general wave equation with damping coefficient $b$, propagation velocity $q(x,y)$ and source $f(x,y,t)$ is on the form
 \begin{align}
@@ -138,14 +199,87 @@ where $k^2=q(k_x^2 + k_y^2)$. If we choose this as the source term, we only need
 &= -b\cos(k_xx)\cos(k_yy)
 \end{align*}
 
-\section*{Applications}
+\section{c++ implementation}
+One of our extensions is to solve the given 2d wave problem by using C++ and its (almost) bult-in libraries std and boost. This is as simple as coding the problem in python,
+as the syntax of the numerics is identical. One difference is that we have to use scalar programming as a vectorized form 
+puts requirements on all called functions (e.g. double sin(double x) must be rewritten/overloaded to take a matrix as argument and also return a matrix). This is not a viable approach, but scalar programming
+done correctly should also be quite readable as the numerics become very close to the mathematics.
 
-\subsection*{Double slit}
-\section*{Parallelization}
-\section*{Visualization}
-\subsection*{MayaVi}
-\subsection*{OpenGL}
+We wrote most of the code directly in main(). This could easily be converted into a general class, but this requires a lot of assignment code and was not done for simplicity.
+Also, most of the parameters are hardcoded and can be changed at the top of main(). The various input functions (i.e. I(x,y), V(x,y), q(x,y,t) and f(x,y,t)) can also be set at this point by assigning
+the general function pointers to point to the relevant functions.
+
+The increased complexity at the boundaries can easily be solved when using scalar programming. The r.h.s of equation TODO can now be evaluated by using four simple if-tests
+\begin{align*}
+&i \mp 1 \rightarrow i\pm 1, \ \ \ \rm if \ \ i \mp 1 \notin  [0,N_x]\\
+&j \mp 1 \rightarrow j\pm 1, \ \ \ \rm if \ \ j \mp 1 \notin  [0,N_y]\\
+\rm rhs = & \\
+&\frac{1}{\Delta x^2} \left( c_{i+1/2,j} (u_{i+1,j} - u_{i,j}) - c_{i-1/2,j}(u_{i,j} - u_{i-1,j}) \right)  + \\
+&\frac{1}{\Delta y^2} \left( c_{i,j+1/2} (u_{i,j+1} - u_{i,j}) - c_{i,j-1/2}(u_{i,j} - u_{i,j-1}) \right) + f(x,y,t),
+\end{align*}
+which is valid for all points in the entire grid ($[0,N_x][0,N_y]$) with von Neumann boundary conditions. With this we don't need specific formulas for the boundaries. This can also be done vectorized in python by
+using ghost points, which is done in our python solver.
+
+We implemented the solver by using the boost::numeric::ublas::matrix template class for the matrices. This removes the need for explicit double pointer 'arithmetics' in addition to manual memeory allocation and deallocation.
+The syntax is easy
+\begin{lstlisting}
+ matrix<double> u(Nx, Ny); // create an Nx by Ny matrix
+ u(0,6) = 5; // set element (0,6) equal to 5.
+\end{lstlisting}
+The contrast from double pointers is obvious u(i,j) $\equiv$ u[i][j]. The matrix class also overloades the arithmetic operators (+,-,*,/), thus allows vectorized syntax
+\begin{lstlisting}
+ matrix<double> u(Nx, Ny);
+ matrix<double> v(Nx, Ny);
+ ...
+ u = u + v - 2*v;
+\end{lstlisting}
+This is not used in our code.
 
 
+\section{C++ parallelization}
+An additional extension is to parallelize our implementation. We did this by using OpenMP, which is an API that supports shared memory multiprocessing in C, C++ and Fortran. 
+
+Our implementation is easily parallelizable (at least to a certain extent). From the numerics, we can see that all calculations in a given timestep is idependent of eachother. That is, for a given n, all
+calculations are only dependent on the previous timestep
+\begin{align*}
+\rm u_{\rm n} = \rm u_{\rm n }(\rm i, \rm j, u_{n-1}).
+\end{align*}
+This implies that the nested space loop is embarrassingly parallel. In OpenMP, the parallelization is done by a pragma directive
+\begin{lstlisting}
+// time loop
+for (int n=1; n<Nt; n++) {
+    // space loops
+    #pragma omp parallel for
+    for (int i=0; i<Nx; i++)
+	for (int j=0; j<Ny; j++)
+	    unext(i,j) = ... something only dep. on n-1 ...
+}
+\end{lstlisting}
+This code forks the outer space loop into N threads, where N is the number of CPU cores. The threads eavenly (if possible) divide the i interval [0,Nx) into N intervals and runs the i-loop for these values of i.
+At the end of the i-loop, the threads terminate and only the master thread continues execution. Since all threads share the same memory, the variables (declared before the loop) used by all threads are the same.
+We could also only parallelize the innermost loop (i.e. the j-loop), but this would probably decrease the efficiency since the threads would be created and killed for each iteration i, 
+thus creating more overhead.
+
+\subsection{Speedtests}
+
+To check the efficiency of the parallelized code, we try a few runs with and without parallelization. First we set the spatial dimensions somewhat high,Â $400 \times 400$. The results are
+
+\begin{table}[position specifier]
+\centering
+\begin{tabular}{l| l| l}
+\# cores & 1 & 4 \\
+time[s] & 57 & 15.3 
+\end{tabular}
+\label{tab:table1}
+\end{table}
+and with $100 \times 100$
+\begin{table}[position specifier]
+\centering
+\begin{tabular}{l l l}
+\# cores & 1 & 4 \\
+time[s] & 3.54 & 0.97
+\end{tabular}
+\label{tab:table1}
+\end{table}
 
 \end{document}

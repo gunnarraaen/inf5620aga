@@ -61,17 +61,29 @@ double coeff3(double x, double y)
 double Vzero(double x, double y) {
     return 0;
 }
-double omega = 0.5;
+double omega = pi;
 double b = 0.01;
+int mx = 4;
+int my = 4;
 double exact_source(double x, double y, double t) {
-    return exp(-b*t)*cos(pi*x/4)*cos(pi*y/4)*(b*b*cos(omega*t) + 2*b*omega*sin(omega*t) -omega*omega*cos(omega*t) - b*cos(omega*t) - omega*sin(omega*t) - pi*pi/8*cos(omega*t) );
+    return exp(-b*t)*cos(mx*pi*x/4)*cos(my*pi*y/4)*(b*omega*sin(omega*t) + (-omega*omega + (mx*pi/4)*(mx*pi/4) + (my*pi/4)*(my*pi/4))*cos(omega*t));
 }
 double exact_V(double x, double y) {
-    return -b*cos(pi*x/4)*cos(pi*y/4);
+    return -b*cos(mx*pi*x/4)*cos(my*pi*y/4);
 }
 double exact_initc(double x, double y) {
-    return cos(pi*x/4)*cos(pi*y/4);
+    return cos(mx*pi*x/4)*cos(my*pi*y/4);
 }
 double exact_coeff(double x, double y) {
     return 1;
+}
+double exact_sol(double x, double y, double t) {
+    return exp(-b*t)*cos(mx*pi*x/4)*cos(my*pi*y/4)*cos(omega*t);
+}
+
+double box_initc(double x, double y) {
+    if ( 1.5 < x && x < 2.5)
+        return 1;
+    else
+        return 0;
 }
