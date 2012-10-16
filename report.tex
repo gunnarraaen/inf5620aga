@@ -111,7 +111,7 @@
 The two dimensional wave equation can be used to model many interesting problems such as electromagnetic waves and tsunami waves. We develop a numerical solver based on an explicit scheme and discuss algorithm validation, stability, visualization and techniques for complex geometries. MayaVi is used to visualize and we have written our own visualizer using OpenGL.
 
 \section*{Theory}
-The wave equation is quite powerful in the sense that it describes many important systems in physics. We have the general equation with damping coefficient $b$, wave velocity $q(x,y)$ and source $f(x,y,t)$
+The wave equation is quite powerful in the sense that it describes many important systems in physics. We have the general equation with damping coefficient $b$, wave velocity $q(x,y)$ and source $f(x,y,t)$ given as
 \begin{align}
 \frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
 \frac{\partial}{\partial x}\left( q (x,y)
@@ -119,25 +119,26 @@ The wave equation is quite powerful in the sense that it describes many importan
 \frac{\partial}{\partial y}\left( q (x,y)
 \frac{\partial u}{\partial y}\right) + f(x,y,t),
 \end{align}
-or
+or more compact
 \begin{align}
 \frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
 \nabla \cdot \big(q(x,y) \nabla u \big )
 \end{align}
-The velocity function $q(x,y)$ describes the wave propagation speed in the point $(x,y)$. For water waves, this can be interpreted as the depth at the point $(x,y)$ as water wave velocities behave like $c(h) \propto \sqrt h$. 
+The velocity function $q(x,y)$ describes the wave propagation speed in the point $(x,y)$. For water waves, this can be interpreted as the depth $h$ at the point $(x,y)$ as water wave velocities behave like $c(h) \propto \sqrt h$. 
 \subsection*{Boundary and initial conditions}
-The equation is second order in time and space, so in order to have a unique solution, we need initial condition $u(x,y,t=0) = I(x,y)$ and its derivative $\dpart{u}{t}|_{t=0}=V(x,y)$. In addition, when parts of the wave hit objects, i.e. a wall, we use the boundary condition
-\begin{align*}
+The equation is second order in time and space, so in order to have a unique solution, we need the initial condition $u(x,y,t=0) = I(x,y)$ and its derivative $\dpart{u}{t}|_{t=0}=V(x,y)$. In addition, when the wave hits a wall, we use the boundary condition
+\begin{align}
+\label{eq:boundary}
 \nabla u\cdot \textbf n = 0 = \dpart{u}{n}
-\end{align*}
+\end{align}
 where $\dpart{u}{n}$ is the derivative in the direction normal to the boundary. 
 \section*{Numerical implementation}
 \subsection*{Discretization}
-The numerical wave equation can be discretized with
+If we look at a system of widths $L_x$ and $L_y$, we can divide the system into a grid with $N_x\times N_y$ points where we have the steplengths $\Delta x=\f{L_x}{N_x-1}$ and $\Delta y=\f{L_y}{N_y-1}$. The wave function $u$ is now represented as a matrix $u_{i,j}$ where $u_{i,j}=u(x_i,y_j)$ in each timestep $t_n$. The numerical wave equation can be discretized on operator form
 \begin{align*}
 \Big[D_tD_t u + bD_{2t}u = D_x  q[D_x u] + D_y q [D_y u]\Big]^n_{i,j}
 \end{align*}
-This evaluates to
+where we have applied the standard approximation for second derivatives in time, the centered difference scheme on the first derivative and the Crank-Nicolson twice in the spatial part. Written out in full index form, this evaluates to
 \begin{align*}
 \text{L.H.S. } & = \f{u^{n+1}_{i,j} + u^{n-1}_{i,j} - 2u^{n}_{i,j}}{\Delta t^2} + b\f{u^{n+1}_{i,j}-u^{n-1}_{i,j}}{2\Delta t}\\
 \text{R.H.S. } & = \f{1}{\Delta x}\Bigg(q_{i+\f{1}{2},j}\Bigg[\f{u^n_{i+1,j} - u^n_{i,j}}{\Delta x}\Bigg]
@@ -145,7 +146,7 @@ This evaluates to
 &+\f{1}{\Delta y}\Bigg(q_{i,j+\f{1}{2}}\Bigg[\f{u^n_{i,j+1} - u^n_{i,j}}{\Delta y}\Bigg]
 - q_{i,j-\f{1}{2}}\Bigg[\f{u^n_{i,j} - u^n_{i,j-1}}{\Delta y}\Bigg]\Bigg)
 \end{align*}
-This can be solved for $u_{i,j}^{n+1}$ and we can easily evolve the system in time. We notice that to calculate for timestep $n+1$, we need both timesteps $n$ and $n-1$ because of the second derivative in time. This gives the requirement of both $u(x,y,t=0) = I(x,y)$ and $u(x,y,t+\Delta t)$ in order to evolve in time. There are two standard ways to calculate the second timestep. If we have the initial condition $\dpart{u}{t}|_{t=0}=0$, we apply the forward difference scheme
+This can be solved for $u_{i,j}^{n+1}$ and we can easily evolve the system in time. We notice that to calculate timestep $n+1$, we need both timesteps $n$ and $n-1$ because of the second derivative in time. This reflects the requirement of both $u(x,y,t=0) = I(x,y)$ and $u(x,y,t+\Delta t)$ as mentioned above. There are two standard ways to calculate the second timestep $u(x,y,0+\Delta t)$. If we have the initial condition $\dpart{u}{t}|_{t=0}=0$, we apply the forward difference scheme
 \begin{align*}
 \f{u^{+1}_{i,j} - u^{0}_{i,j}}{\Delta t} = 0\\
 \end{align*}
@@ -153,21 +154,67 @@ which gives
 \begin{align*}
 u^{+1}_{i,j} = u^{0}_{i,j}
 \end{align*}
-for all $i,j$. If we have the more complicated and general case where $\dpart{u}{t}|_{t=0} = V(x,y)$, we can use the centered difference scheme 
+for all $i,j$. If we have the more complicated and general system where $\dpart{u}{t}|_{t=0} = V(x,y)$, we can use the centered difference scheme and define
 \begin{align*}
-\f{u^{+1}_{i,j} - u^{-1}_{i,j}}{2\Delta t} = V(x,y)\\
+\f{u^{+1}_{i,j} - u^{-1}_{i,j}}{2\Delta t} = V(x_i,y_j)\\
 \end{align*}
 which gives
 \begin{align*}
 u^{-1}_{i,j} = u^{+1}_{i,j} + V_{i,j}
 \end{align*}
-where we evaluate $V_{i,j} = V(x_i,y_j)$. We can again solve the equation for $u_{i,j}^{+1}$ by using only one timestep.
-\subsection*{Boundary conditions}
-We apply the centered difference scheme on $\dpart{u}{n}$, assuming that the normal vector is in either the $x$ or $y$-direction
+where we evaluate $V_{i,j} = V(x_i,y_j)$. We can again solve the equation for $u_{i,j}^{+1}$ by using only one timestep. The second derivative in the spatial dimensions also require both neighbor points which will give problems at the boundaries where such points might not exist. We solve this by using \eqref{eq:boundary} and apply the centered difference scheme on $\dpart{u}{n}$, assuming that the normal vector is in either the $x$- or $y$-direction and define
 \begin{align*}
 \dpart{u}{x} = 0 = \f{u^n_{i+1,j} - u^n_{i-1,j} }{ 2\Delta x}
 \end{align*}
-where we have equality because we define the right hand side this way. We implement this by defining a 
+which again gives
+\begin{align}
+\label{eq:boundary2}
+u^n_{i-1,j} = u^n_{i+1,j}
+\end{align}
+These points are often called ghost points, or ghost cells, because they don't really exist.
+\subsection*{More general boundary conditions}
+If we have walls at the boundaries $u_{i,j} | i,j \in \{0,N_x-1\}$, we can easly do an if-test and apply \eqref{eq:boundary2}. The code will then be rather messy with special cases for each boundary, and the systems geometry is limited. We can instead introduce the wall matrix $W \in \mathbb B ^{N_x\times N_y}$ where $\mathbb B$ is the boolean domain. Each point $W_{i,j}$ contains either a \textit{true} or \textit{false} value defining if that point is a wall or not. To implement this method, we have the matrices $u\_$ and $u\_prev\_$ which contains all the values of $u$ in the two previous timesteps. In addition we have the wall matrix $W$ with booleans. When we access the elements $u_{i\pm 1,j}$ or $u_{i,j\pm 1}$, we create a function that returns the elements $u_{i\mp 1,j}$ or $u_{i,j\mp 1}$ if there is a wall at the respective point. The algorithm looks like
+\begin{lstlisting}
+int idx(int i) {
+	return (i+10*Nr)\%Nr;
+}
+
+double u(int i,int j, int di, int dj) {
+	if(W(idx(i+di),idx(j+dj))) {
+		return u_(idx(i-di),idx(j-dj));
+	} 
+
+	return u_(idx(i+di),idx(j+dj));
+}
+\end{lstlisting}
+\subsection*{Complex objects and varying $q(x,y)$}
+By using the method above we can represent more complex objects and geometries by filling the wall matrix $W$ instead of making complicated special cases programmatically. One way to handle both boundary conditions and the wave velocity field $q(x,y)$ is to use BMP-images to represent the geometry of the system. If we create a black-and-white BMP-image of size $N_x\times N_y$ pixels, this can in our program be represented as a matrix $G \in \mathbb R ^{N_x\times N_y}$ where each value $G_{i,j} \in (0,1)$ containing the white level value in that point. This image can be used to define both boundaries (walls and objects) and ground (wave velocity) by choosing a threshold value $p$ such that $W_{i,j} = G_{i,j} \geq p$. By shifting the values $G_{i,j} \rightarrow G_{i,j}-p$, the value in $G$ can now be interpreted as the depth where values above zero will behave like hard boundaries and values below zero will affect the wave velocity.
+
+\begin{lstlisting}
+void calculateWalls() {
+	for(int i=0;i<Nx;i++) {
+		for(int j=0;j<Ny;j++) {
+			walls(i,j) = ground(i,j) >= 0;
+		}
+	}
+}
+
+\end{lstlisting}
+\subsection*{Source term and rain}
+One application of source terms can be raindrops falling in the water. We create raindrops randomly at a height $z_0$ and let them fall with constant velocity. When the rain hits the surface, we increase the source term $f_{i,j}$ by a suitable value. 
+\begin{lstlisting}
+void moveRainDrops() {
+    for(int k=0;k<raindrops.size();k++) {
+        raindrops[k].z -= 0.005;
+
+        if(raindrops[k].z <= u_(raindrops[k].i,raindrops[k].j)) {
+            source(raindrops[k].i,raindrops[k].j) = 0.01;
+            raindrops.erase(raindrops.begin()+k--);
+        }
+    }
+}
+This creates those beautiful ripples we expect from raindrops hitting the surface.
+\end{lstlisting}
 \section*{Verification}
 \subsection*{Constant solution}
 \subsection*{Exact 1D solution}
@@ -199,11 +246,16 @@ f(x,y,t) &= u(x,y,t)\Big[ k^2 - \omega^2 + b\omega \tan\omega t\Big]
 \end{align*}
 where $k^2=q(k_x^2 + k_y^2)$. If we choose this as the source term, we only need to calculate the first time derivative to have a unique solution.
 \begin{align*}
-\dpart{u(x,y,t)}{t}\Big|_{t=0} &= -e^{-bt}(b\cos\omega t + \omega \sin\omega t)\cos(k_xx)\cos(k_yy)\Big|_{t=0}\\
+V(x,y) &= \dpart{u(x,y,t)}{t}\Big|_{t=0} \\
+& = -e^{-bt}(b\cos\omega t + \omega \sin\omega t)\cos(k_xx)\cos(k_yy)\Big|_{t=0}\\
 &= -b\cos(k_xx)\cos(k_yy)
 \end{align*}
+The initial condition is 
+\begin{align*}
+I(x,y) &= u(x,y,t=0) = \cos(k_xx)\cos(k_yy)
+\end{align*}
 
-\section{c++ implementation}
+\section*{c++ implementation}
 One of our extensions is to solve the given 2d wave problem by using C++ and its (almost) bult-in libraries std and boost. This is as simple as coding the problem in python,
 as the syntax of the numerics is identical. One difference is that we have to use scalar programming as a vectorized form 
 puts requirements on all called functions (e.g. double sin(double x) must be rewritten/overloaded to take a matrix as argument and also return a matrix). This is not a viable approach, but scalar programming
@@ -240,7 +292,7 @@ The contrast from double pointers is obvious u(i,j) $\equiv$ u[i][j]. The matrix
 This is not used in our code.
 
 
-\section{C++ parallelization}
+\section*{C++ parallelization}
 An additional extension is to parallelize our implementation. We did this by using OpenMP, which is an API that supports shared memory multiprocessing in C, C++ and Fortran. 
 
 Our implementation is easily parallelizable (at least to a certain extent). From the numerics, we can see that all calculations in a given timestep is idependent of eachother. That is, for a given n, all
@@ -264,7 +316,7 @@ At the end of the i-loop, the threads terminate and only the master thread conti
 We could also only parallelize the innermost loop (i.e. the j-loop), but this would probably decrease the efficiency since the threads would be created and killed for each iteration i, 
 thus creating more overhead.
 
-\subsection{Speedtests}
+\subsection*{Speedtests}
 
 To check the efficiency of the parallelized code, we try a few runs with and without parallelization. We use the following spatial domains: $50 \times 50$, $100 \times 100$, $400 \times 400$. The results are (in seconds)
 \begin{center}
@@ -279,7 +331,7 @@ To check the efficiency of the parallelized code, we try a few runs with and wit
 If the entire algorithm was completely parallelizable the ratio has a theoretical maximum ratio of $N_{\rm cores}$. We can see that the parallel code is about $3.7$ times faster. This makes sense, since the time loop
 has not been touched. Also, we can see that the ratio falls with decreasing spatial domain size, which is probably due to increased overhead from thread creation/destruction compared to the gain from parallelization.
 Larger spatial domain should increase the ratio further.
-\section{Error convergance}
+\section*{Error convergance}
 We are given an exact solution to the 2d wave equation (1) in the project text. In this section, we study the numerical approximation of this solution. All the derivations of $I(x,y)$, $V(x,y)$ and $f(x,y,t)$ are
 given in TODO. 
 
@@ -289,7 +341,7 @@ t \ll h$ to ensure that the temporal error is not changed for different $h$. To 
  E = h^2 \sqrt{\sum_{i,j}(u_{i,j} - u^{\rm exact}_{i,j})^2}.
 \end{align*}
 We expect that $E/h^2$ to constant. 
-\subsection{Tests}
+\subsection*{Tests}
 Firstly, we set $h=0.0001$. Then we vary $h$ from $h_0 \equiv 0.08$ to $h_0/16 = 0.005$. The results are shown in table TODO
 \begin{center}
    \begin{tabular}{| l || l | l|}
