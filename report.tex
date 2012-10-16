@@ -357,6 +357,16 @@ Firstly, we set $h=0.0001$. Then we vary $h$ from $h_0 \equiv 0.08$ to $h_0/16 =
 \end{center}
 
 \section*{Visualization}
-\subsection*{OpenGL}
-
+\subsection*{What is OpenGL?}
+OpenGL (Open Graphics Library, OGL) is an API that can be used to communicate with the graphics card. In a basic OGL-program, we define a window that has a width and height (measured in pixels) and offers a set of objects (points, triangles, quads, polygons etc) that can be rendered in the window.
+\subsection*{Rendering points and triangles}
+If we have 10 points at position $r_i=(x_i,y_i,z_i)$ saved in a matrix, we can render these points with the following code
+\begin{lstlisting}
+glBegin(GL_VERTEX);
+for (int i=0; i<10; i++) {
+   glVertex(points[n].x,points[n].y,points[n].z);
+}
+glEnd();
+\end{lstlisting}
+Usually we want to render a surface rather than points, so we use one of the other \textit{primitives} such as \textit{GL\_TRIANGLES}. If we call \textit{glBegin(GL\_TRIANGLES);} instead, OGL expects three points defining a triangle, a \textit{face}. We can then render our whole grid by dividing it into small triangles.
 \end{document}
