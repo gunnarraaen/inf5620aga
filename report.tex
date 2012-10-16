@@ -335,24 +335,28 @@ Larger spatial domain should increase the ratio further.
 We are given an exact solution to the 2d wave equation (1) in the project text. In this section, we study the numerical approximation of this solution. All the derivations of $I(x,y)$, $V(x,y)$ and $f(x,y,t)$ are
 given in TODO. 
 
-There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta t$. We take $\Delta x = \Delta y \equiv h$ and $\Delta
-t \ll h$ to ensure that the temporal error is not changed for different $h$. To calculate the error we used that for a given n (timestep)
+There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta t$. We take $\Delta x = \Delta y \equiv h$ and $\Delta t = 0.1h$ 
+to ensure stability. To calculate the error we used that for a given time
 \begin{align*}
  E = h^2 \sqrt{\sum_{i,j}(u_{i,j} - u^{\rm exact}_{i,j})^2}.
 \end{align*}
-We expect that $E/h^2$ to constant. 
+We expect that $E/h^2$ to be constant. 
 \subsection*{Tests}
-Firstly, we set $h=0.0001$. Then we vary $h$ from $h_0 \equiv 0.08$ to $h_0/16 = 0.005$. The results are shown in table TODO
+We chose the range of $h$ from $0.08$ to $0.004$ and calculated the error at time $t=1$. The results are listed in table \ref{tbl1}.
 \begin{center}
    \begin{tabular}{| l || l | l|}
     \hline 
     $h$ & E & $E/h^2$ \\ \hline \hline
-    $h_0 $ & 0.0176 & 2.75\\ \hline 
-    $h_0/2$ & 0.00427 & 2.69\\ \hline 
-    $h_0/4$ & 0.00104 & 2.6 \\ \hline 
-    $h_0/8$ & 0.000247 & 2.47 \\ \hline 
-    $h_0/16$ & 0.000114 & 4.56\\ \hline 
+    $0.08 $ & 0.0179 & 2.80 \\ \hline 
+    $0.04 $ & 0.00437 & 2.73 \\ \hline 
+    $0.02$ & 0.00107 & 2.68 \\ \hline 
+    $0.01$ & 0.000266 & 2.66  \\ \hline 
+    $0.005$ & $5.52 \times 10^{-6}$ & 2.65 \\ \hline 
+    $0.004$ &  & \\ \hline 
     
    \end{tabular}
+   \label{tbl1}
 \end{center}
+We see that the factor $E/h^2$ is approximatly constant ($\approx 2.7$), as expect from error analysis. If we decrease $h$ by a factor of 2 the error decreases by a factor of $2^2 = 4$. Since the error
+convergance behaves (TODO) as expected, the resolution of the agreement of extended pictures implies correctness of implementation.
 \end{document}

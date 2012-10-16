@@ -27,12 +27,14 @@ int main(int argc, char** argv)
     Lx = 4;
     Ly = 4;
     b = 0.01;
-    dt = 0.001;
-    dx = 0.04;
-    dy = 0.04;
-    // cmd line override
+    double h;
+    // cmd line args.
     if (argc==2) T = atof(argv[1]);
+    if (argc==3) h = atof(argv[2]);
 
+    dt = h*0.1;
+    dx = h;
+    dy = h;
     // functions
     initc = &exact_initc;
     c = &exact_coeff;
@@ -63,7 +65,8 @@ int main(int argc, char** argv)
             u(i,j) = ulast(i,j) + dt*V(i*dx,j*dy)*(1-b*dt/2.) + 0.5*RHS(i,j,0,&ulast)*ddt;
 
     // time loop
-    for (int n=1; n<Nt; n++) {
+    int n;
+    for (n=1; n<Nt; n++) {
         // calc. next step
         #pragma omp parallel for
         for (int i=0; i<Nx; i++)
@@ -71,7 +74,7 @@ int main(int argc, char** argv)
                 unext(i,j) = (1/(1+b*dt/2.))*( 2*u(i,j) - ulast(i,j)*(1-b*dt/2.) + RHS(i,j,n,&u)*ddt);
         E = 0;
         // update matrices
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i=0; i<Nx; i++) {
             for (int j=0; j<Ny; j++) {
                 ulast(i,j) = u(i,j);
@@ -86,11 +89,12 @@ int main(int argc, char** argv)
         if (n % write_delay == 0) {
             str.str(std::string(""));
             str << "test.d" << padnumber(n/write_delay,'0');
-            print_matrix(Nx,Ny,&u,str.str().c_str(),1);
-            cout << n*dt << ": error = " << E << endl;
+            //print_matrix(Nx,Ny,&u,str.str().c_str(),1);
+            //cout << n*dt << ": error = " << E << endl;
         }
-    } // end: time loop
 
+    } // end: time loop
+    cout << n*dt << ": error = " << E << endl;
     return 0;
 }
 double RHS(int i, int j, int n, matrix<double> * uc)
