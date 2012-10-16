@@ -254,6 +254,93 @@ The initial condition is
 \begin{align*}
 I(x,y) &= u(x,y,t=0) = \cos(k_xx)\cos(k_yy)
 \end{align*}
+\section*{Verification of the method}
+ In order to make sure the solver is free of bugs, we need to run it through some test solutions. Natural choices that should be reproduced exactly is the constant solution (for instance, $u(x,y,t) = 1.2$) and a plug wave. For python based programs, these tests can be put into a nosetest module, and done in \verb nose_test_betterwave.py  which can be found in the project folder. We there let each test run over all versions of the code (scalar, vectorized and (ideally) c++). For a constant solution we may create an initial state by
+ \begin{lstlisting}[language=Python]
+def I(x, y):
+	return 1.2
+ \end{lstlisting}
+and test the output of the solver, $u$, through for instance:
+\begin{lstlisting}[language=Python]
+u_exact = 1.2*np.ones((Nx+1,Ny+1))
+diff = np.abs(u_exact - u).max()
+nt.assert_almost_equal(diff, 0, delta=1E-14)
+\end{lstlisting}
+
+ For the plug wave, we can do a very similar test, as long as we make sure the wave travels for exactly, and integer number of periods, so that the wave in the exact same state as it was initially. In the nosetest module this was done by trial and error while using a relatively coarse grid. We made the initial state by the function
+  \begin{lstlisting}[language=Python]
+def I(x, y):
+		return np.logical_and((np.abs(x) < Lx/2.+1), (np.abs(x) > Lx/2.-1))*1.
+ \end{lstlisting}
+and test the output of the solver, $u$, through for instance:
+\begin{lstlisting}[language=Python]
+x = np.linspace(0, Lx, Nx+1)  # mesh points in x dir
+y = np.linspace(0, Ly, Ny+1)  # mesh points in y dir
+X,Y = np.meshgrid(x,y)
+u_exact = I(X,Y)
+T = 1.0
+n = int(T/dt - 5)
+fname = 'solution_%06d.txt' % n
+u = np.loadtxt(fname)
+diff = np.abs(u_exact - u[:,0]).max()
+nt.assert_almost_equal(diff, 0, delta=1E-14)
+\end{lstlisting}
+ where the suitable value for $n$ had to be found manually.
+
+Once these tests are passed, we began looking at the convergence rate of the solvers. In order to do this, we note in theory, the error in the solution should to lowest order behave as 
+\begin{equation}\label{eq:errororder}
+ E = C_1 (\Delta x)^2 + C_2(\Delta y)^2 + C_3(\Delta t)^2
+\end{equation}
+So that if we double the amount of mesh points in both time and space, we should reduce the error by a factor of 4. In order to measure the error, we decided to run the solver up to a given time (for simplicity, $T = 1.0$), and compare the solution to the exact solution some manufactured function in each point $(x_i,y_j)$. If we denote this error by $e_{i,j}$, then a reasonable expression for the total error would be 
+\begin{equation}\label{eq:errorestimate}
+ E = \left( \frac{1}{N_x N_y}\sum_{i,j} e_{i,j}^2 \right)^{1/2}.
+\end{equation}
+And so we check if this error is reduced by roughly a factor 4 if we double the number of grid points. Since this is only an estimate of the error behavior we will need to be a bit gentle on this requirement, and so we should check that the ratio between consecutive errors is, for instance, 1/4 up to an accuracy of $\pm 0.05$. We decided to test this on the standing wave solution 
+\begin{equation}
+ u(x,y,t) = e^{-bt}\cos\left(\frac{m_x \pi x }{L_x}\right)\cos\left(\frac{m_y \pi y }{L_y}\right)\cos(\omega t)
+\end{equation}
+with source and initial state as described in section TODO. A test for convergence rate may look something like
+\begin{lstlisting}[language=Python]
+mx = 4.; my = 4.; b = 0.01; omega=np.pi;
+def u_exact(x,y,t):
+	return ...
+def f(x,y,t):
+	return ...
+def I(x, y):
+	return ...
+def V(x,y):
+	return ...
+Nx = 40; Ny = 40; T = 1.0
+dt = 0.01
+for version in ['vectorized']:
+	errorlist=[0,0,0]
+	for i in range(3):	
+		... # construct the X-Y-grid, load the last step from file
+		u_ex = u_exact(X,Y,T2)
+		error = np.sqrt(np.sum((u_ex-u)**2)*dx*dy)
+		errorlist[i] = error
+		Nx = Nx*2;
+		Ny = Ny*2;
+		dt = dt/2
+ratio1 = errorlist[1]/errorlist[0]
+ratio2 = errorlist[2]/errorlist[1]
+nt.assert_almost_equal(ratio1, 0.25, delta=0.05)
+nt.assert_almost_equal(ratio2, 0.25, delta=0.05)
+\end{lstlisting}
+
+After some debugging, the program was able to successfully pass all tests for both the scalar and vectorized version
+
+
+\section*{Visualization in MayaVi}
+For a 3-dimensional animation, the standard matplotlib-library in Python shows a poor performance, with unacceptible speeds. In order to get sufficiently fast real-time animation, as well as a large improvement in speed for saving animations, we decided to animate our solutions with the MayaVi library. Using this we were able to plot solutions at a useful speed. Saving animations was done by saving the individual frames plotted by mayavi, and turning the set of pictures into an animation using the program Mencoder. Saving animations was still painfully slow, as MayaVi is not very efficient at saving plots. It turned out that, using built-in MayaVi function, one could store the picture as a set of pixel values. This set could then be plotted and saved in Pylab for an overall noticable speedup in movie creation. The details of this was stored in the function \verb mcrtmv(frames,dt,Lx,Ly,Nx,Ny,savemovie=False,mvname='test')  which can be found in the source code in the module of the same name. An screenshot of 
+a plotted and stored solution can be found in figure \ref{fig:mayavitest} and several stored animations can be found among the source files. 
+
+\begin{figure}
+\centering
+\includegraphics[width=13cm]{mayavitest.png}
+\caption{The figure shows a screenshot of a stored animation of the plug wave solution}
+\label{fig:mayavitest}
+\end{figure}
 
 \section*{c++ implementation}
 One of our extensions is to solve the given 2d wave problem by using C++ and its (almost) bult-in libraries std and boost. This is as simple as coding the problem in python,
@@ -261,7 +348,7 @@ as the syntax of the numerics is identical. One difference is that we have to us
 puts requirements on all called functions (e.g. double sin(double x) must be rewritten/overloaded to take a matrix as argument and also return a matrix). This is not a viable approach, but scalar programming
 done correctly should also be quite readable as the numerics become very close to the mathematics.
 
-We wrote most of the code directly in main(). This could easily be converted into a general class, but this requires a lot of assignment code and was not done for simplicity.
+We wrote most of the code directly in main(). This could easily be converted into a general class solver, but this requires a lot of assignment code and was not done for simplicity.
 Also, most of the parameters are hardcoded and can be changed at the top of main(). The various input functions (i.e. I(x,y), V(x,y), q(x,y,t) and f(x,y,t)) can also be set at this point by assigning
 the general function pointers to point to the relevant functions.
 
@@ -271,7 +358,7 @@ The increased complexity at the boundaries can easily be solved when using scala
 &j \mp 1 \rightarrow j\pm 1, \ \ \ \rm if \ \ j \mp 1 \notin  [0,N_y]\\
 \rm rhs = & \\
 &\frac{1}{\Delta x^2} \left( c_{i+1/2,j} (u_{i+1,j} - u_{i,j}) - c_{i-1/2,j}(u_{i,j} - u_{i-1,j}) \right)  + \\
-&\frac{1}{\Delta y^2} \left( c_{i,j+1/2} (u_{i,j+1} - u_{i,j}) - c_{i,j-1/2}(u_{i,j} - u_{i,j-1}) \right) + f(x,y,t),
+&\frac{1}{\Delta y^2} \left( c_{i,j+1/2} (u_{i,j+1} - u_{i,j}) - c_{i,j-1/2}(u_{i,j} - u_{i,j-1}) \right) + f^n_{i,j},
 \end{align*}
 which is valid for all points in the entire grid ($[0,N_x][0,N_y]$) with von Neumann boundary conditions. With this we don't need specific formulas for the boundaries. This can also be done vectorized in python by
 using ghost points, which is done in our python solver.
@@ -291,16 +378,15 @@ The contrast from double pointers is obvious u(i,j) $\equiv$ u[i][j]. The matrix
 \end{lstlisting}
 This is not used in our code.
 
-
 \section*{C++ parallelization}
 An additional extension is to parallelize our implementation. We did this by using OpenMP, which is an API that supports shared memory multiprocessing in C, C++ and Fortran. 
 
-Our implementation is easily parallelizable (at least to a certain extent). From the numerics, we can see that all calculations in a given timestep is idependent of eachother. That is, for a given n, all
-calculations are only dependent on the previous timestep
+Our implementation is to some extent easily parallelizable. From the numerics, we note that all calculations in a given timestep are idependent of each other. That is, for a given n, all
+calculations are only dependent on the previous timestep, n-1
 \begin{align*}
 \rm u_{\rm n} = \rm u_{\rm n }(\rm i, \rm j, u_{n-1}).
 \end{align*}
-This implies that the nested space loop is embarrassingly parallel. In OpenMP, the parallelization is done by a pragma directive
+This implies that the nested spatial loop is embarrassingly parallel. In OpenMP, the parallelization is done by a pragma directive
 \begin{lstlisting}
 // time loop
 for (int n=1; n<Nt; n++) {
@@ -311,39 +397,48 @@ for (int n=1; n<Nt; n++) {
 	    unext(i,j) = ... something only dep. on n-1 ...
 }
 \end{lstlisting}
-This code forks the outer spatial loop into $N_{\rm cores}$ threads, where $N_{\rm cores}$ is the number of CPU cores. The threads eavenly (if possible) divide the i interval [0,Nx) into $N_{\rm cores}$ intervals and runs the i-loop for these values of i.
-At the end of the i-loop, the threads terminate and only the master thread continues execution. Since all threads share the same memory, the variables (declared before the loop) used by all threads are the same.
-We could also only parallelize the innermost loop (i.e. the j-loop), but this would probably decrease the efficiency since the threads would be created and killed for each iteration i, 
+This code forks the outer spatial loop into $N_{\rm cores}$ threads, where $N_{\rm cores}$ is the number of CPU cores. The threads eavenly (if possible) divide the i interval [0,Nx) into $N_{\rm cores}$ 
+intervals and runs the i-loop for the given values of i.
+At the end of the i-loop, the slave threads terminate and only the master thread continues execution. Since all threads share the same memory, the variables (declared before the loop) used by all threads are the same.
+We could try to parallelize the innermost loop (i.e. the j-loop) instead, but this would probably decrease the efficiency since the threads would then be created/killed for each iteration of i (compared to each n), 
 thus creating more overhead.
 
 \subsection*{Speedtests}
-
-To check the efficiency of the parallelized code, we try a few runs with and without parallelization. We use the following spatial domains: $50 \times 50$, $100 \times 100$, $400 \times 400$. The results are (in seconds)
-\begin{center}
-   \begin{tabular}{| c || l | l | | l|}
+To check the efficiency of the parallelized code, we tried a few runs with and without parallelization. We use the following spatial domains:  $50 \times 50$, $100 \times 100$, $400 \times 400$. The time used (in seconds) 
+by each run is given in table \ref{tbl1}.
+\begin{table}[h!]
+   \begin{tabular}{| c || l | l |  l|}
     \hline 
     \# cores & 50x50 & 100x100 & 400x400 \\ \hline \hline
     1 & 0.89 & 3.54 & 57.1 \\ \hline 
     4 & 0.5 & 0.97 & 15.3\\ \hline  \hline 
     Ratio & 1.8 & 3.65 & 3.73 \\ \hline
    \end{tabular}
-\end{center}
-If the entire algorithm was completely parallelizable the ratio has a theoretical maximum ratio of $N_{\rm cores}$. We can see that the parallel code is about $3.7$ times faster. This makes sense, since the time loop
-has not been touched. Also, we can see that the ratio falls with decreasing spatial domain size, which is probably due to increased overhead from thread creation/destruction compared to the gain from parallelization.
-Larger spatial domain should increase the ratio further.
+      \caption{\label{tbl1} Execution time as a function of number of cores and spatial domain.}
+\end{table}
+If the entire algorithm was completely parallelizable the ratio has an obvious theoretical maximum ratio of $N_{\rm cores}$. We can see that the parallel code is about $3.7$ times faster, which is lower than the theoretical
+maximum. This must be so, since the algorithm has not been fully parallelized. Also, we see that the ratio falls with decreasing spatial domain size, which is probably due to increased overhead from 
+thread creation/destruction compared to the gain from parallelization. Larger spatial domain should increase the ratio even further, as this overhead becomes more and more negligible.
 \section*{Error convergance}
-We are given an exact solution to the 2d wave equation (1) in the project text. In this section, we study the numerical approximation of this solution. All the derivations of $I(x,y)$, $V(x,y)$ and $f(x,y,t)$ are
-given in TODO. 
+We are given an exact solution to the 2d wave equation (1) in the project text. In this section, we study the numerical approximation of this solution. The derivations of $I(x,y)$, $V(x,y)$ and $f(x,y,t)$ are
+given in the section above. 
 
-There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta t$. We take $\Delta x = \Delta y \equiv h$ and $\Delta t = 0.1h$ 
-to ensure stability. To calculate the error we used that for a given time
+There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta t$. 
+We take $\Delta x = \Delta y \equiv h$ ($F_x = F_y = 1$) and $\Delta t = 0.1h$ ($F_t = 0.1$) to ensure stability. To calculate the error, we use equation \ref{eq:errorestimate} in the following form
+\begin{align}
+ E = h \sqrt{\sum_{i,j}(u_{i,j} - u^{\rm exact}_{i,j})^2}.
+ \label{eq123}
+\end{align}
+We expect $E/h^2$ to be constant
 \begin{align*}
- E = h^2 \sqrt{\sum_{i,j}(u_{i,j} - u^{\rm exact}_{i,j})^2}.
+ E &= C_t \Delta t^2 + C_x \Delta x^2 + C_y \Delta_y^2 \\
+ &= C_t F_t^2 h^2 + C_x F_x^2 h^2 + C_y F_y^2 h^2 \\
+ &= (C_t F_t^2 + C_x F_x^2 + C_y F_y^2)h^2 \\
+ &\equiv Ch^2.
 \end{align*}
-We expect that $E/h^2$ to be constant. 
 \subsection*{Tests}
-We chose the range of $h$ from $0.08$ to $0.004$ and calculated the error at time $t=1$. The results are listed in table \ref{tbl1}.
-\begin{center}
+The error can readily be calculated in the code, using \ref{eq123}, at a given (nonzero) time, e.g. $T=1$. The results for various values of $h$ are listed in table \ref{tbl2}.
+\begin{table}[h!]
    \begin{tabular}{| l || l | l|}
     \hline 
     $h$ & E & $E/h^2$ \\ \hline \hline
@@ -351,15 +446,13 @@ We chose the range of $h$ from $0.08$ to $0.004$ and calculated the error at tim
     $0.04 $ & 0.00437 & 2.73 \\ \hline 
     $0.02$ & 0.00107 & 2.68 \\ \hline 
     $0.01$ & 0.000266 & 2.66  \\ \hline 
-    $0.005$ & $5.52 \times 10^{-6}$ & 2.65 \\ \hline 
-    $0.004$ &  & \\ \hline 
-    
+    $0.005$ & $6.62 \times 10^{-5}$ & 2.65 \\ \hline 
+    $0.004$ & $4.23 \times 10^{-5}$ & 2.65 \\ \hline 
    \end{tabular}
-   \label{tbl1}
-\end{center}
-
-We see that the factor $E/h^2$ is approximatly constant ($\approx 2.7$), as expect from error analysis. If we decrease $h$ by a factor of 2 the error decreases by a factor of $2^2 = 4$. Since the error
-convergance behaves (TODO) as expected, the resolution of the agreement of extended pictures implies correctness of implementation.
+   \caption{\label{tbl2} Error for given $h$ at $T=1$.}
+\end{table}
+We see that the factor $E/h^2$ is approximatly constant ($\approx 2.7$), as expect from error analysis. If we decrease $h$ by a factor of 2 the error decreases by a factor of $2^2 = 4$. The nosetest for this is described
+above. The fact that the error behaves as expected is evidence that our implementation is correct.
 
 \section*{Visualization}
 \subsection*{OpenGL}

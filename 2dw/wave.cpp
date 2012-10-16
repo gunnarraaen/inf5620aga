@@ -66,12 +66,18 @@ int main(int argc, char** argv)
 
     // time loop
     int n;
+    E = 0;
     for (n=1; n<Nt; n++) {
         // calc. next step
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i=0; i<Nx; i++)
-            for (int j=0; j<Ny; j++)
+            for (int j=0; j<Ny; j++) {
                 unext(i,j) = (1/(1+b*dt/2.))*( 2*u(i,j) - ulast(i,j)*(1-b*dt/2.) + RHS(i,j,n,&u)*ddt);
+                u_exact =  exact_sol(i*dx,j*dy,1*dt);
+                E += (unext(i,j) - u_exact)*(unext(i,j) - u_exact);
+            }
+        cout << E << endl;
+        return 0;
         E = 0;
         // update matrices
         //#pragma omp parallel for
