@@ -106,8 +106,12 @@
 %% DOCUMENT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
+
+\section*{Abstract}
+The two dimensional wave equation can be used to model many interesting problems such as electromagnetic waves and tsunami waves. We develop a numerical solver based on an explicit scheme and discuss algorithm validation, stability, visualization and techniques for complex geometries. MayaVi is used to visualize and we have written our own visualizer using OpenGL.
+
 \section*{Theory}
-The general wave equation with damping coefficient $b$, propagation velocity $q(x,y)$ and source $f(x,y,t)$ is on the form
+The wave equation is quite powerful in the sense that it describes many important systems in physics. We have the general equation with damping coefficient $b$, wave velocity $q(x,y)$ and source $f(x,y,t)$
 \begin{align}
 \frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
 \frac{\partial}{\partial x}\left( q (x,y)
@@ -120,9 +124,9 @@ or
 \frac{\partial^2 u}{\partial t^2} + b\frac{\partial u}{\partial t} =
 \nabla \cdot \big(q(x,y) \nabla u \big )
 \end{align}
-The velocity function $q(x,y)$ contains the wave propagation speed in the point $(x,y)$. For water waves, this can be interpreted as the depth at the point $(x,y)$. Water waves have approximately wave speed $c(h) \propto \sqrt h$.
-\subsection*{Boundary conditions}
-When the wave hits an object, i.e. a wall, we use the boundary condition
+The velocity function $q(x,y)$ describes the wave propagation speed in the point $(x,y)$. For water waves, this can be interpreted as the depth at the point $(x,y)$ as water wave velocities behave like $c(h) \propto \sqrt h$. 
+\subsection*{Boundary and initial conditions}
+The equation is second order in time and space, so in order to have a unique solution, we need initial condition $u(x,y,t=0) = I(x,y)$ and its derivative $\dpart{u}{t}|_{t=0}=V(x,y)$. In addition, when parts of the wave hit objects, i.e. a wall, we use the boundary condition
 \begin{align*}
 \nabla u\cdot \textbf n = 0 = \dpart{u}{n}
 \end{align*}
