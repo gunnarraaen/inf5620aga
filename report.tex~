@@ -450,13 +450,17 @@ above. The fact that the error behaves as expected is evidence that our implemen
 \subsection*{MayaVi}
 For a 3-dimensional animation, the standard matplotlib-library in Python shows a poor performance, with unacceptible speeds. In order to get sufficiently fast real-time animation, as well as a large improvement in speed for saving animations, we decided to animate our solutions with the MayaVi library. Using this we were able to plot solutions at a useful speed. Saving animations was done by saving the individual frames plotted by mayavi, and turning the set of pictures into an animation using the program Mencoder. Saving animations was still painfully slow, as MayaVi is not very efficient at saving plots. It turned out that, using built-in MayaVi function, one could store the picture as a set of pixel values. This set could then be plotted and saved in Pylab for an overall noticable speedup in movie creation. The details of this was stored in the function \verb mcrtmv(frames,dt,Lx,Ly,Nx,Ny,savemovie=False,mvname='test')  which can be found in the source code in the module of the same name. An screenshot of 
 a plotted and stored solution can be found in figure \ref{fig:mayavitest} and several stored animations can be found among the source files. 
-
-\begin{figure}
-\centering
-\includegraphics[width=13cm]{mayavitest.png}
-\caption{The figure shows a screenshot of a stored animation of the plug wave solution}
-\label{fig:mayavitest}
-\end{figure}
+\\
+\\
+Removed the mayavitest.png since it is not in repo.
+\\
+\\
+%\begin{figure}
+%\centering
+%\includegraphics[width=13cm]{mayavitest.png}
+%\caption{The figure shows a screenshot of a stored animation of the plug wave solution}
+%\label{fig:mayavitest}
+%\end{figure}
 
 \subsection*{OpenGL}
 OpenGL (Open Graphics Library, OGL) is an API that can be used to communicate with the graphics card. In a basic OGL-program, we define a window that has a width and height (measured in pixels). We are offered a set of objects or \textit{primitives} (points, triangles, quads, polygons etc) that can be rendered in the window by OGL.
