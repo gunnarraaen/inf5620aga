@@ -374,9 +374,9 @@ This is not used in our code.
 An additional extension is to parallelize our implementation. We did this by using OpenMP, which is an API that supports shared memory multiprocessing in C, C++ and Fortran. 
 
 Our implementation is to some extent easily parallelizable. From the numerics, we note that all calculations in a given timestep are idependent of each other. That is, for a given n, all
-calculations are only dependent on the previous timestep, n-1
+calculations are only dependent on previous timesteps
 \begin{align*}
-\rm u_{\rm n} = \rm u_{\rm n }(\rm i, \rm j, u_{n-1}).
+\rm u_{\rm n} = \rm u_{\rm n }(u_{n-1},u_{n-2}).
 \end{align*}
 This implies that the nested spatial loop is embarrassingly parallel. In OpenMP the parallelization is done by a pragma directive
 \begin{lstlisting}
@@ -394,7 +394,6 @@ intervals.
 At the end of the i-loop, the slave threads terminate and only the master thread continues execution. Since all threads share the same memory, the variables (declared before the loop) used by all threads are the same.
 We could try to parallelize the innermost loop (i.e. the j-loop) instead, but this would probably decrease the efficiency since the threads would then be created/killed for each iteration of i (compared to each n), 
 thus creating more overhead.
-
 \subsection*{Speedtests}
 To check the efficiency of the parallelized code, we tried a few runs with and without parallelization. We use the following spatial domains:  $50 \times 50$, $100 \times 100$, $400 \times 400$. The time used (in seconds) 
 by each run is given in table \ref{tbl1}.
@@ -411,10 +410,10 @@ by each run is given in table \ref{tbl1}.
 If the entire algorithm was completely parallelizable the ratio has an obvious theoretical maximum ratio of $N_{\rm cores}$. We can see that the parallel code is about $3.7$ times faster, which is lower than the theoretical
 maximum. This must be so, since the algorithm has not been fully parallelized. Also, we see that the ratio falls with decreasing spatial domain size, which is probably due to increased overhead from 
 thread creation/destruction compared to the gain from parallelization. Larger spatial domain should increase the ratio even further, as this overhead becomes more and more negligible.
-\section*{Error convergance}
+\section*{Error convergance in standing wave solution}
 We are given an exact solution to the 2d wave equation (1) in the project text. In this section, we study the numerical approximation of this solution. The derivations of $I(x,y)$, $V(x,y)$ and $f(x,y,t)$ are
-given in the section above. 
-
+given in the section above.
+%
 There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta y$. 
 We take $\Delta x = \Delta y \equiv h$ ($F_x = F_y = 1$) and $\Delta t = 0.1h$ ($F_t = 0.1$) to ensure stability. To calculate the error, we use equation \ref{eq:errorestimate} in the following form
 \begin{align}
@@ -434,8 +433,8 @@ The error can readily be calculated in the code, using \ref{eq123}, at a given (
    \begin{tabular}{| l || l | l|}
     \hline 
     $h$ & E & $E/h^2$ \\ \hline \hline
-    $0.08 $ & 0.0179 & 2.80 \\ \hline 
-    $0.04 $ & 0.00437 & 2.73 \\ \hline 
+    $0.08$ & 0.0179 & 2.80 \\ \hline 
+    $0.04$ & 0.00437 & 2.73 \\ \hline 
     $0.02$ & 0.00107 & 2.68 \\ \hline 
     $0.01$ & 0.000266 & 2.66  \\ \hline 
     $0.005$ & $6.62 \times 10^{-5}$ & 2.65 \\ \hline 
@@ -450,17 +449,13 @@ above. The fact that the error behaves as expected is evidence that our implemen
 \subsection*{MayaVi}
 For a 3-dimensional animation, the standard matplotlib-library in Python shows a poor performance, with unacceptible speeds. In order to get sufficiently fast real-time animation, as well as a large improvement in speed for saving animations, we decided to animate our solutions with the MayaVi library. Using this we were able to plot solutions at a useful speed. Saving animations was done by saving the individual frames plotted by mayavi, and turning the set of pictures into an animation using the program Mencoder. Saving animations was still painfully slow, as MayaVi is not very efficient at saving plots. It turned out that, using built-in MayaVi function, one could store the picture as a set of pixel values. This set could then be plotted and saved in Pylab for an overall noticable speedup in movie creation. The details of this was stored in the function \verb mcrtmv(frames,dt,Lx,Ly,Nx,Ny,savemovie=False,mvname='test')  which can be found in the source code in the module of the same name. An screenshot of 
 a plotted and stored solution can be found in figure \ref{fig:mayavitest} and several stored animations can be found among the source files. 
-\\
-\\
-Removed the mayavitest.png since it is not in repo.
-\\
-\\
-%\begin{figure}
-%\centering
-%\includegraphics[width=13cm]{mayavitest.png}
-%\caption{The figure shows a screenshot of a stored animation of the plug wave solution}
-%\label{fig:mayavitest}
-%\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=13cm]{mayavitest.png}
+\caption{The figure shows a screenshot of a stored animation of the plug wave solution}
+\label{fig:mayavitest}
+\end{figure}
 
 \subsection*{OpenGL}
 OpenGL (Open Graphics Library, OGL) is an API that can be used to communicate with the graphics card. In a basic OGL-program, we define a window that has a width and height (measured in pixels). We are offered a set of objects or \textit{primitives} (points, triangles, quads, polygons etc) that can be rendered in the window by OGL.
