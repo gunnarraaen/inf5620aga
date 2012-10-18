@@ -345,7 +345,7 @@ nt.assert_almost_equal(ratio2, 0.25, delta=0.05)
 
 After some debugging, the program was able to successfully pass all tests for both the scalar and vectorized version.
 
-\section*{c++ implementation}
+\section*{C++ implementation}
 One of our extensions is to solve the given 2d wave problem by using C++ and its (almost) bult-in libraries std and boost. This is as simple as coding the problem in python,
 as the syntax of the numerics is identical. One difference is that we have to use scalar programming as a vectorized form 
 puts requirements on all called functions (e.g. double sin(double x) must be rewritten/overloaded to take a matrix as argument and also return a matrix). This is not a viable approach, but scalar programming
@@ -378,19 +378,19 @@ calculations are only dependent on the previous timestep, n-1
 \begin{align*}
 \rm u_{\rm n} = \rm u_{\rm n }(\rm i, \rm j, u_{n-1}).
 \end{align*}
-This implies that the nested spatial loop is embarrassingly parallel. In OpenMP, the parallelization is done by a pragma directive
+This implies that the nested spatial loop is embarrassingly parallel. In OpenMP the parallelization is done by a pragma directive
 \begin{lstlisting}
 // time loop
 for (int n=1; n<Nt; n++) {
-    // space loops
-    #pragma omp parallel for
-    for (int i=0; i<Nx; i++) // <-- this is parallelized
-	for (int j=0; j<Ny; j++) // < -- all threads run this loop
-	    unext(i,j) = ... something only dep. on n-1 ...
+  // space loops
+  #pragma omp parallel for
+  for (int i=0; i<Nx; i++) // <-- this is parallelized
+    for (int j=0; j<Ny; j++) // <-- all threads run this loop for all j
+      unext(i,j) = ... something only dep. on n-1 ...
 }
 \end{lstlisting}
 This code forks the outer spatial loop into $N_{\rm cores}$ threads, where $N_{\rm cores}$ is the number of CPU cores. The threads eavenly (if possible) divide the i interval [0,Nx) into $N_{\rm cores}$ 
-intervals and runs the i-loop for the given values of i.
+intervals.
 At the end of the i-loop, the slave threads terminate and only the master thread continues execution. Since all threads share the same memory, the variables (declared before the loop) used by all threads are the same.
 We could try to parallelize the innermost loop (i.e. the j-loop) instead, but this would probably decrease the efficiency since the threads would then be created/killed for each iteration of i (compared to each n), 
 thus creating more overhead.
@@ -415,7 +415,7 @@ thread creation/destruction compared to the gain from parallelization. Larger sp
 We are given an exact solution to the 2d wave equation (1) in the project text. In this section, we study the numerical approximation of this solution. The derivations of $I(x,y)$, $V(x,y)$ and $f(x,y,t)$ are
 given in the section above. 
 
-There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta t$. 
+There are various ways to calculate the error of the approximation. We wanted to check the dependence of the error in spatial resolution, $\Delta x$ and $\Delta y$. 
 We take $\Delta x = \Delta y \equiv h$ ($F_x = F_y = 1$) and $\Delta t = 0.1h$ ($F_t = 0.1$) to ensure stability. To calculate the error, we use equation \ref{eq:errorestimate} in the following form
 \begin{align}
  E = h \sqrt{\sum_{i,j}(u_{i,j} - u^{\rm exact}_{i,j})^2}.
